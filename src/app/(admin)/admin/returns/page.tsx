@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -45,11 +45,7 @@ export default function ReturnsPage() {
     notes: "",
   });
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  async function fetchData() {
+  const fetchData = useCallback(async () => {
     try {
       const [returnsRes, batchesRes] = await Promise.all([
         fetch("/api/returns"),
@@ -64,7 +60,7 @@ export default function ReturnsPage() {
         const data = await batchesRes.json();
         // Get closed batches without returns
         const returnedBatchIds = new Set(
-          returns.map((r: Return) => r.batchId)
+          data.returns.map((r: Return) => r.batchId)
         );
         setClosedBatches(
           data.batches.filter(
@@ -77,7 +73,11 @@ export default function ReturnsPage() {
     } finally {
       setIsLoading(false);
     }
-  }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -28,17 +28,7 @@ export default function PayoutsPage() {
   const [selectedBatchId, setSelectedBatchId] = useState<string>("all");
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  useEffect(() => {
-    if (selectedBatchId) {
-      fetchPayouts(selectedBatchId === "all" ? "" : selectedBatchId);
-    }
-  }, [selectedBatchId]);
-
-  async function fetchData() {
+  const fetchData = useCallback(async () => {
     try {
       const batchesRes = await fetch("/api/batches");
       if (batchesRes.ok) {
@@ -51,7 +41,17 @@ export default function PayoutsPage() {
     } finally {
       setIsLoading(false);
     }
-  }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  useEffect(() => {
+    if (selectedBatchId) {
+      fetchPayouts(selectedBatchId === "all" ? "" : selectedBatchId);
+    }
+  }, [selectedBatchId]);
 
   async function fetchPayouts(batchId: string) {
     try {

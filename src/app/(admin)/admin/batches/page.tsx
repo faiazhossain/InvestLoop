@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -69,11 +69,7 @@ export default function BatchesPage() {
     fetchBatches();
   }, []);
 
-  useEffect(() => {
-    filterBatches();
-  }, [batches, searchQuery, statusFilter]);
-
-  function filterBatches() {
+  const filterBatches = useCallback(() => {
     let filtered = [...batches];
 
     if (searchQuery) {
@@ -87,7 +83,11 @@ export default function BatchesPage() {
     }
 
     setFilteredBatches(filtered);
-  }
+  }, [batches, searchQuery, statusFilter]);
+
+  useEffect(() => {
+    filterBatches();
+  }, [filterBatches]);
 
   async function fetchBatches() {
     try {
@@ -621,8 +621,8 @@ export default function BatchesPage() {
 
               {/* Show contributions if available */}
               {"contributions" in selectedBatch &&
-                Array.isArray((selectedBatch as any).contributions) &&
-                (selectedBatch as any).contributions.length > 0 && (
+                Array.isArray(selectedBatch.contributions) &&
+                selectedBatch.contributions.length > 0 && (
                   <div>
                     <h3 className='text-sm font-medium text-muted-foreground mb-2'>
                       Recent Contributions
@@ -638,9 +638,9 @@ export default function BatchesPage() {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {((selectedBatch as any).contributions as any[])
+                          {selectedBatch.contributions
                             .slice(0, 5)
-                            .map((contribution: any) => (
+                            .map((contribution) => (
                               <TableRow key={contribution.id}>
                                 <TableCell>
                                   {contribution.user?.name ||
