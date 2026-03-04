@@ -1,0 +1,112 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  MEMBER
+}
+
+enum BatchStatus {
+  OPEN
+  CLOSED
+}
+
+enum ContributionSource {
+  CASH
+  REINVEST
+}
+
+model User {
+  id            String         @id @default(cuid())
+  clerkId       String         @unique
+  email         String         @unique
+  name          String?
+  role          UserRole       @default(MEMBER)
+  isActive      Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  contributions Contribution[]
+  payouts       Payout[]
+
+  @@map("users")
+}
+
+model Batch {
+  id            String        @id @default(cuid())
+  name          String
+  description   String?
+  principal     Decimal       @default(0) @db.Decimal(15, 2)
+  profit        Decimal       @default(0) @db.Decimal(15, 2)
+  status        BatchStatus   @default(OPEN)
+  startDate     DateTime
+  endDate       DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  contributions Contribution[]
+  return        Return?
+  payouts       Payout[]
+  reinvestments Contribution[] @relation("ReinvestmentSource")
+
+  @@map("batches")
+}
+
+model Contribution {
+  id           String             @id @default(cuid())
+  userId       String
+  batchId      String
+  amount       Decimal            @db.Decimal(15, 2)
+  source       ContributionSource @default(CASH)
+  sourceBatchId String?           // For reinvestments: the batch this came from
+  date         DateTime           @default(now())
+  notes        String?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  batch        Batch              @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  sourceBatch  Batch?             @relation("ReinvestmentSource", fields: [sourceBatchId], references: [id])
+
+  @@index([userId])
+  @@index([batchId])
+  @@map("contributions")
+}
+
+model Return {
+  id          String   @id @default(cuid())
+  batchId     String   @unique
+  totalReturn Decimal  @db.Decimal(15, 2)
+  profit      Decimal  @db.Decimal(15, 2)
+  date        DateTime @default(now())
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  batch       Batch    @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@map("returns")
+}
+
+model Payout {
+  id              String   @id @default(cuid())
+  userId          String
+  batchId         String
+  principal       Decimal  @db.Decimal(15, 2)
+  profit          Decimal  @db.Decimal(15, 2)
+  grossPayout     Decimal  @db.Decimal(15, 2)
+  reinvested      Decimal  @default(0) @db.Decimal(15, 2)
+  cashout         Decimal  @db.Decimal(15, 2)
+  date            DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  batch           Batch    @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, batchId], name: "payout_user_batch_unique")
+  @@index([userId])
+  @@index([batchId])
+  @@map("payouts")
+}
