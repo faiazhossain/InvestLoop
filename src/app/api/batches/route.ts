@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { currentUser } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 
 export async function GET() {
   try {
@@ -95,14 +96,13 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const batchData: Record<string, unknown> = {
+    const batchData: Prisma.BatchCreateInput = {
       name: name.trim(),
       startDate: new Date(startDate),
+      ...(description && { description }),
+      ...(endDate && { endDate: new Date(endDate) }),
+      ...(status && { status }),
     };
-
-    if (description) batchData.description = description;
-    if (endDate) batchData.endDate = new Date(endDate);
-    if (status) batchData.status = status;
 
     const batch = await prisma.batch.create({
       data: batchData,

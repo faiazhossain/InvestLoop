@@ -6,6 +6,8 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "2mb",
     },
   },
+  // Skip static generation for all pages - required for Clerk authentication
+  output: "standalone",
 };
 
 export default nextConfig;

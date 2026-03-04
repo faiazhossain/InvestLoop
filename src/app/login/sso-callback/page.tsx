@@ -4,6 +4,8 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 
+export const dynamic = "force-dynamic";
+
 export default function SSOCallbackPage() {
   const router = useRouter();
   const { isLoaded, isSignedIn } = useAuth();
