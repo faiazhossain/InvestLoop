@@ -152,6 +152,7 @@ export default function SignUpPage() {
                   card: "bg-transparent shadow-none p-4 border-none w-full max-w-full",
                   main: "w-full",
                   form: "w-full",
+
                   formField: "w-full",
                   formFieldInput:
                     "w-full rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 h-11 focus:border-indigo-500 focus:ring-indigo-500 dark:focus:border-indigo-400 transition-all duration-200 text-slate-900 dark:text-white placeholder:text-slate-400",

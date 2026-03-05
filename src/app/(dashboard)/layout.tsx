@@ -32,6 +32,7 @@ const adminNavItems = [
 
 const memberNavItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/returns", label: "My Returns", icon: TrendingUp },
 ];
 
 export default function DashboardLayout({

@@ -9,9 +9,9 @@ import {
   Users,
   PiggyBank,
   TrendingUp,
-  DollarSign,
   Wallet,
 } from "lucide-react";
+import { TakaIcon } from "@/components/icons/taka";
 
 interface AdminStats {
   totalMembers: number;
@@ -114,7 +114,7 @@ export default function AdminDashboard() {
             <CardTitle className="text-sm font-medium">
               Average ROI per Batch
             </CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <TakaIcon className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">

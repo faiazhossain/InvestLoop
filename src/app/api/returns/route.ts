@@ -16,18 +16,44 @@ export async function GET() {
       where: { clerkId: user.id },
     });
 
-    if (!dbUser || dbUser.role !== "ADMIN") {
+    if (!dbUser) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const returns = await prisma.return.findMany({
-      include: {
-        batch: true,
-      },
-      orderBy: { date: "desc" },
-    });
+    if (dbUser.role === "ADMIN") {
+      const returns = await prisma.return.findMany({
+        include: {
+          batch: true,
+        },
+        orderBy: { date: "desc" },
+      });
+      return NextResponse.json({ returns });
+    } else {
+      const memberReturns = await prisma.return.findMany({
+        include: {
+          batch: {
+            include: {
+              contributions: {
+                where: { userId: dbUser.id },
+              },
+            },
+          },
+        },
+        orderBy: { date: "desc" },
+      });
 
-    return NextResponse.json({ returns });
+      const returnsWithMemberData = memberReturns
+        .filter((ret) => ret.batch.contributions.length > 0)
+        .map((ret) => ({
+          ...ret,
+          memberPrincipal: ret.batch.contributions.reduce(
+            (sum, c) => sum + parseFloat(c.amount.toString()),
+            0
+          ),
+        }));
+
+      return NextResponse.json({ returns: returnsWithMemberData });
+    }
   } catch (error) {
     console.error("Error fetching returns:", error);
     return NextResponse.json(

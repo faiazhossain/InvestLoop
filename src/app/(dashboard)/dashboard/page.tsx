@@ -24,7 +24,8 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { DollarSign, TrendingUp, Wallet, PiggyBank } from "lucide-react";
+import { TrendingUp, Wallet, PiggyBank } from "lucide-react";
+import { TakaIcon } from "@/components/icons/taka";
 
 export default function MemberDashboard() {
   const [stats, setStats] = useState<MemberStats | null>(null);
@@ -125,7 +126,7 @@ export default function MemberDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Cashout</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <TakaIcon className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
