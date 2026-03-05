@@ -67,3 +67,33 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Clerk responsive overrides */
+.cl-card,
+.cl-main,
+.cl-form,
+.cl-formButtonPrimary,
+.cl-socialButtonsBlockButton,
+.cl-formField,
+.cl-formFieldInput {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: unset !important;
+}
+
+.cl-rootBox {
+  width: 100% !important;
+}
+
+.cl-socialButtonsBlockButton {
+  justify-content: center !important;
+}
+
+/* Remove Clerk card shadow */
+.cl-card,
+.cl-internal-1xexi0s,
+div[class*="cl-internal"],
+div[class*="cl-card"] {
+  box-shadow: none !important;
+  -webkit-box-shadow: none !important;
+}

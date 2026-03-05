@@ -19,8 +19,8 @@ export async function GET() {
     }
 
     const [totalMembers, activeMembers, batches] = await Promise.all([
-      prisma.user.count({ where: { role: "MEMBER" } }),
-      prisma.user.count({ where: { role: "MEMBER", isActive: true } }),
+      prisma.user.count({ where: { role: { in: ["MEMBER", "ADMIN"] } } }),
+      prisma.user.count({ where: { role: { in: ["MEMBER", "ADMIN"] }, isActive: true } }),
       prisma.batch.findMany({
         select: {
           principal: true,
