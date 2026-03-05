@@ -16,6 +16,7 @@ import {
   Users,
   Wallet,
   ArrowLeftRight,
+  RefreshCw,
 } from "lucide-react";
 
 const navItems = [
@@ -24,6 +25,7 @@ const navItems = [
   { href: "/admin/contributions", label: "Contributions", icon: Wallet },
   { href: "/admin/returns", label: "Returns", icon: TrendingUp },
   { href: "/admin/payouts", label: "Payouts", icon: ArrowLeftRight },
+  { href: "/admin/reinvestments", label: "Reinvestments", icon: RefreshCw },
   { href: "/admin/members", label: "Members", icon: Users },
 ];
 
