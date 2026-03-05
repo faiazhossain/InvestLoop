@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     // Validate source batch
     const sourceBatch = await prisma.batch.findUnique({
       where: { id: sourceBatchId },
-      include: { return: true },
+      include: { return: true, payouts: true },
     });
 
     if (!sourceBatch) {
@@ -70,6 +70,16 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Validate all users upfront to avoid queries inside transaction loop
+    const userIds = reinvestDecisions.map(d => d.userId);
+    const members = await prisma.user.findMany({
+      where: {
+        id: { in: userIds },
+        isActive: true,
+      },
+    });
+    const activeUserIds = new Set(members.map(m => m.id));
 
     let finalTargetBatchId = targetBatchId;
 
@@ -111,8 +121,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create contributions for each reinvestment decision
-    const createdContributions = [];
+    // Prepare valid reinvestment data upfront
+    const validReinvestments: Array<{
+      userId: string;
+      amount: Decimal;
+      payoutId: string;
+    }> = [];
+
     let totalReinvested = new Decimal(0);
 
     for (const decision of reinvestDecisions) {
@@ -120,41 +135,96 @@ export async function POST(request: NextRequest) {
 
       if (amount.isZero() || amount.isNegative()) continue;
 
-      // Validate user exists and is active
-      const member = await prisma.user.findUnique({
-        where: { id: decision.userId },
-      });
-
-      if (!member || !member.isActive) {
-        continue; // Skip inactive members
+      // Skip if user is not active (pre-validated)
+      if (!activeUserIds.has(decision.userId)) {
+        continue;
       }
 
-      const contribution = await prisma.contribution.create({
-        data: {
-          userId: decision.userId,
-          batchId: finalTargetBatchId,
-          amount: amount,
-          source: "REINVEST",
-          sourceBatchId: sourceBatchId,
-          date: new Date(),
-          notes: `Reinvestment from ${sourceBatch.name}`,
-        },
-        include: {
-          user: true,
-          batch: true,
-        },
+      // Find the payout for this user in the source batch
+      const payout = sourceBatch.payouts.find(p => p.userId === decision.userId);
+
+      if (!payout) {
+        continue;
+      }
+
+      validReinvestments.push({
+        userId: decision.userId,
+        amount,
+        payoutId: payout.id,
       });
 
-      createdContributions.push(contribution);
       totalReinvested = totalReinvested.plus(amount);
     }
 
-    // Update target batch principal
-    await prisma.batch.update({
-      where: { id: finalTargetBatchId },
-      data: {
-        principal: targetBatch.principal.plus(totalReinvested),
-      },
+    if (validReinvestments.length === 0) {
+      return NextResponse.json(
+        { error: "No valid reinvestments to process" },
+        { status: 400 }
+      );
+    }
+
+    // Store created IDs for response
+    const contributionIds: string[] = [];
+    const reinvestmentIds: string[] = [];
+
+    await prisma.$transaction(async (tx) => {
+      // Create all contributions
+      for (const reinvest of validReinvestments) {
+        const contribution = await tx.contribution.create({
+          data: {
+            userId: reinvest.userId,
+            batchId: finalTargetBatchId!,
+            amount: reinvest.amount,
+            source: "REINVEST",
+            date: new Date(),
+            notes: `Reinvestment from ${sourceBatch.name}`,
+          },
+          select: { id: true },
+        });
+        contributionIds.push(contribution.id);
+      }
+
+      // Create all reinvestments
+      for (let i = 0; i < validReinvestments.length; i++) {
+        const reinvest = validReinvestments[i];
+        const contributionId = contributionIds[i];
+
+        const reinvestment = await tx.reinvestment.create({
+          data: {
+            userId: reinvest.userId,
+            sourceBatchId: sourceBatchId,
+            targetBatchId: finalTargetBatchId!,
+            sourcePayoutId: reinvest.payoutId,
+            targetContributionId: contributionId,
+            amount: reinvest.amount,
+            date: new Date(),
+            notes: `Reinvestment from ${sourceBatch.name} to ${targetBatch.name}`,
+          },
+          select: { id: true },
+        });
+        reinvestmentIds.push(reinvestment.id);
+      }
+
+      // Update target batch principal using atomic increment
+      await tx.batch.update({
+        where: { id: finalTargetBatchId },
+        data: {
+          principal: {
+            increment: totalReinvested.toNumber(),
+          },
+        },
+      });
+    }, { timeout: 30000 });
+
+    // Fetch created records for response (outside transaction)
+    const contributions = await prisma.contribution.findMany({
+      where: { id: { in: contributionIds } },
+      include: { user: true, batch: true },
+    });
+
+    const reinvestments = await prisma.reinvestment.findMany({
+      where: { id: { in: reinvestmentIds } },
+      include: { user: true, sourceBatch: true, targetBatch: true },
     });
 
     // Recalculate payouts for source batch to update reinvested/cashout amounts
@@ -162,7 +232,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      contributions: createdContributions,
+      reinvestments,
+      contributions,
       totalReinvested: totalReinvested.toString(),
       targetBatchId: finalTargetBatchId,
     });

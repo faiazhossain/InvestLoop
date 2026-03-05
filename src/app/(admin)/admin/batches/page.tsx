@@ -32,12 +32,16 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { Batch, BatchStatus } from "@/types";
+import { Batch, BatchStatus, Reinvestment } from "@/types";
 import { Plus, Eye, Pencil, Trash2, Search } from "lucide-react";
 import { toast } from "sonner";
 
 type BatchWithCounts = Batch & {
   _count?: { contributions: number; payouts: number };
+  sourceReinvestments?: Reinvestment[];
+  totalReinvested?: number;
+  totalCashout?: number;
+  reinvestmentTargets?: string[];
 };
 
 type FormMode = "create" | "edit";
@@ -345,6 +349,8 @@ export default function BatchesPage() {
                   <TableHead>Name</TableHead>
                   <TableHead>Principal</TableHead>
                   <TableHead>Profit</TableHead>
+                  <TableHead>Reinvested</TableHead>
+                  <TableHead>Cashout</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Start Date</TableHead>
                   <TableHead>Contributions</TableHead>
@@ -358,6 +364,28 @@ export default function BatchesPage() {
                     <TableCell>{formatCurrency(batch.principal)}</TableCell>
                     <TableCell className='text-green-600'>
                       {formatCurrency(batch.profit)}
+                    </TableCell>
+                    <TableCell>
+                      {batch.totalReinvested ? (
+                        <div className='flex flex-col'>
+                          <span>{formatCurrency(batch.totalReinvested)}</span>
+                          {batch.reinvestmentTargets?.map((target, i) => (
+                            <span
+                              key={i}
+                              className='text-xs text-muted-foreground'
+                            >
+                              to {target}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className='text-muted-foreground'>-</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {batch.totalCashout
+                        ? formatCurrency(batch.totalCashout)
+                        : "-"}
                     </TableCell>
                     <TableCell>
                       <Badge
@@ -652,15 +680,110 @@ export default function BatchesPage() {
                                   {formatCurrency(contribution.amount)}
                                 </TableCell>
                                 <TableCell>
-                                  <Badge variant='outline'>
-                                    {contribution.source}
-                                  </Badge>
+                                  <div className="flex flex-col gap-1">
+                                    <Badge variant='outline'>
+                                      {contribution.source}
+                                    </Badge>
+                                    {contribution.reinvestment && (
+                                      <span className="text-xs text-muted-foreground">
+                                        from {contribution.reinvestment.sourceBatch?.name || "Previous Batch"}
+                                      </span>
+                                    )}
+                                  </div>
                                 </TableCell>
                                 <TableCell>
                                   {formatDate(contribution.date)}
                                 </TableCell>
                               </TableRow>
                             ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+                )}
+
+              {/* Show reinvestments from this batch */}
+              {"targetReinvestments" in selectedBatch &&
+                Array.isArray(selectedBatch.targetReinvestments) &&
+                selectedBatch.targetReinvestments.length > 0 && (
+                  <div>
+                    <h3 className='text-sm font-medium text-muted-foreground mb-2'>
+                      Reinvestments Into This Batch
+                    </h3>
+                    <div className='border rounded-lg'>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Member</TableHead>
+                            <TableHead>From Batch</TableHead>
+                            <TableHead>Amount</TableHead>
+                            <TableHead>Date</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {selectedBatch.targetReinvestments.map(
+                            (reinvestment) => (
+                              <TableRow key={reinvestment.id}>
+                                <TableCell>
+                                  {reinvestment.user?.name ||
+                                    reinvestment.user?.email}
+                                </TableCell>
+                                <TableCell>
+                                  {reinvestment.sourceBatch?.name || "-"}
+                                </TableCell>
+                                <TableCell>
+                                  {formatCurrency(reinvestment.amount)}
+                                </TableCell>
+                                <TableCell>
+                                  {formatDate(reinvestment.date)}
+                                </TableCell>
+                              </TableRow>
+                            ),
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+                )}
+
+              {/* Show reinvestments from this batch (outgoing) */}
+              {"sourceReinvestments" in selectedBatch &&
+                Array.isArray(selectedBatch.sourceReinvestments) &&
+                selectedBatch.sourceReinvestments.length > 0 && (
+                  <div>
+                    <h3 className='text-sm font-medium text-muted-foreground mb-2'>
+                      Reinvestments From This Batch
+                    </h3>
+                    <div className='border rounded-lg'>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Member</TableHead>
+                            <TableHead>To Batch</TableHead>
+                            <TableHead>Amount</TableHead>
+                            <TableHead>Date</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {selectedBatch.sourceReinvestments.map(
+                            (reinvestment) => (
+                              <TableRow key={reinvestment.id}>
+                                <TableCell>
+                                  {reinvestment.user?.name ||
+                                    reinvestment.user?.email}
+                                </TableCell>
+                                <TableCell>
+                                  {reinvestment.targetBatch?.name || "-"}
+                                </TableCell>
+                                <TableCell>
+                                  {formatCurrency(reinvestment.amount)}
+                                </TableCell>
+                                <TableCell>
+                                  {formatDate(reinvestment.date)}
+                                </TableCell>
+                              </TableRow>
+                            ),
+                          )}
                         </TableBody>
                       </Table>
                     </div>

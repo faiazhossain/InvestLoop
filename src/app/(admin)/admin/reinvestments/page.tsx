@@ -183,19 +183,13 @@ export default function ReinvestmentsPage() {
     );
 
     const amountToDistribute = Math.min(totalAmount, maxAvailable);
+    const distributionRatio = maxAvailable > 0 ? amountToDistribute / maxAvailable : 0;
 
     setDecisions((prev) => {
-      let remaining = amountToDistribute;
       return prev.map((d) => {
         const available = parseFloat(d.availableToReinvest);
-        let memberAmount: number;
-
-        if (remaining <= 0) {
-          memberAmount = 0;
-        } else {
-          memberAmount = Math.min(available, remaining);
-          remaining -= memberAmount;
-        }
+        // Distribute proportionally based on each member's share of total available
+        const memberAmount = available * distributionRatio;
 
         return {
           ...d,

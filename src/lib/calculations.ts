@@ -20,10 +20,9 @@ export async function calculatePayouts(batchId: string) {
   const batchProfit = new Decimal(batch.profit.toString());
 
   // Get all reinvestments coming FROM this batch
-  const reinvestments = await prisma.contribution.findMany({
+  const reinvestments = await prisma.reinvestment.findMany({
     where: {
       sourceBatchId: batchId,
-      source: "REINVEST",
     },
   });
 

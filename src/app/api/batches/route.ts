@@ -19,16 +19,62 @@ export async function GET() {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    let batches;
+    let batches: unknown[];
 
     if (dbUser.role === "ADMIN") {
-      batches = await prisma.batch.findMany({
+      const adminBatches = await prisma.batch.findMany({
         orderBy: { createdAt: "desc" },
         include: {
           _count: {
             select: { contributions: true, payouts: true },
           },
+          sourceReinvestments: {
+            include: {
+              targetBatch: { select: { id: true, name: true } },
+              user: { select: { id: true, name: true } },
+            },
+          },
+          payouts: {
+            select: {
+              reinvested: true,
+              cashout: true,
+            },
+          },
         },
+      });
+
+      // Transform batches to include calculated reinvestment summary
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      batches = adminBatches.map((batch: any) => {
+        const totalReinvested =
+          batch.sourceReinvestments?.reduce(
+            (sum: number, r: { amount: { toString: () => string } }) =>
+              sum + parseFloat(r.amount.toString()),
+            0,
+          ) || 0;
+
+        const totalCashout =
+          batch.payouts?.reduce(
+            (sum: number, p: { cashout: { toString: () => string } }) =>
+              sum + parseFloat(p.cashout.toString()),
+            0,
+          ) || 0;
+
+        const reinvestmentTargets = [
+          ...new Set(
+            batch.sourceReinvestments?.map(
+              (r: { targetBatch: { name: string } | null }) =>
+                r.targetBatch?.name,
+            ) || [],
+          ),
+        ].filter(Boolean) as string[];
+
+        return {
+          ...batch,
+          totalReinvested,
+          totalCashout,
+          reinvestmentTargets,
+        };
       });
     } else {
       // Members see batches they've contributed to

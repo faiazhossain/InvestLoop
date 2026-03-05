@@ -55,13 +55,13 @@ export interface Contribution {
   batchId: string;
   amount: string;
   source: ContributionSource;
-  sourceBatchId: string | null;
   date: Date;
   notes: string | null;
   createdAt: Date;
   updatedAt: Date;
   user?: User;
   batch?: Batch;
+  reinvestment?: Reinvestment;
 }
 
 export const contributionFormSchema = z.object({
@@ -69,7 +69,6 @@ export const contributionFormSchema = z.object({
   batchId: z.string().min(1, "Batch is required"),
   amount: z.string().min(1, "Amount is required"),
   source: z.enum(["CASH", "REINVEST"]),
-  sourceBatchId: z.string().optional(),
   date: z.string().min(1, "Date is required"),
   notes: z.string().optional(),
 });
@@ -113,7 +112,40 @@ export interface Payout {
   updatedAt: Date;
   user?: User;
   batch?: Batch;
+  reinvestments?: Reinvestment[];
 }
+
+// Reinvestment
+export interface Reinvestment {
+  id: string;
+  userId: string;
+  sourceBatchId: string;
+  targetBatchId: string;
+  sourcePayoutId: string;
+  targetContributionId: string | null;
+  amount: string;
+  date: Date;
+  notes: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  user?: User;
+  sourceBatch?: Batch;
+  targetBatch?: Batch;
+  sourcePayout?: Payout;
+  targetContribution?: Contribution;
+}
+
+export const reinvestmentFormSchema = z.object({
+  userId: z.string().min(1, "Member is required"),
+  sourceBatchId: z.string().min(1, "Source batch is required"),
+  targetBatchId: z.string().min(1, "Target batch is required"),
+  sourcePayoutId: z.string().min(1, "Source payout is required"),
+  amount: z.string().min(1, "Amount is required"),
+  date: z.string().min(1, "Date is required"),
+  notes: z.string().optional(),
+});
+
+export type ReinvestmentFormData = z.infer<typeof reinvestmentFormSchema>;
 
 // API Response types
 export interface ApiResponse<T = unknown> {
@@ -138,4 +170,18 @@ export interface AdminStats {
   openBatches: number;
   totalPrincipal: number;
   totalProfit: number;
+}
+
+// Batch with reinvestment data
+export interface BatchWithReinvestment extends Batch {
+  _count?: {
+    contributions: number;
+    payouts: number;
+  };
+  sourceReinvestments?: Reinvestment[];
+  payouts?: Payout[];
+  // Calculated fields
+  totalReinvested?: number;
+  totalCashout?: number;
+  reinvestmentTargets?: string[];
 }

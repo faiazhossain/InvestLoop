@@ -33,6 +33,7 @@ model User {
   updatedAt     DateTime       @updatedAt
   contributions Contribution[]
   payouts       Payout[]
+  reinvestments Reinvestment[]
 
   @@map("users")
 }
@@ -51,7 +52,8 @@ model Batch {
   contributions Contribution[]
   return        Return?
   payouts       Payout[]
-  reinvestments Contribution[] @relation("ReinvestmentSource")
+  sourceReinvestments  Reinvestment[] @relation("ReinvestmentSource")
+  targetReinvestments  Reinvestment[] @relation("ReinvestmentTarget")
 
   @@map("batches")
 }
@@ -62,14 +64,13 @@ model Contribution {
   batchId      String
   amount       Decimal            @db.Decimal(15, 2)
   source       ContributionSource @default(CASH)
-  sourceBatchId String?           // For reinvestments: the batch this came from
   date         DateTime           @default(now())
   notes        String?
   createdAt    DateTime           @default(now())
   updatedAt    DateTime           @updatedAt
   user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   batch        Batch              @relation(fields: [batchId], references: [id], onDelete: Cascade)
-  sourceBatch  Batch?             @relation("ReinvestmentSource", fields: [sourceBatchId], references: [id])
+  reinvestment Reinvestment?
 
   @@index([userId])
   @@index([batchId])
@@ -91,22 +92,49 @@ model Return {
 }
 
 model Payout {
-  id              String   @id @default(cuid())
+  id              String         @id @default(cuid())
   userId          String
   batchId         String
-  principal       Decimal  @db.Decimal(15, 2)
-  profit          Decimal  @db.Decimal(15, 2)
-  grossPayout     Decimal  @db.Decimal(15, 2)
-  reinvested      Decimal  @default(0) @db.Decimal(15, 2)
-  cashout         Decimal  @db.Decimal(15, 2)
-  date            DateTime @default(now())
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  batch           Batch    @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  principal       Decimal        @db.Decimal(15, 2)
+  profit          Decimal        @db.Decimal(15, 2)
+  grossPayout     Decimal        @db.Decimal(15, 2)
+  reinvested      Decimal        @default(0) @db.Decimal(15, 2)
+  cashout         Decimal        @db.Decimal(15, 2)
+  date            DateTime       @default(now())
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  batch           Batch          @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  reinvestments   Reinvestment[]
 
   @@unique([userId, batchId], name: "payout_user_batch_unique")
   @@index([userId])
   @@index([batchId])
   @@map("payouts")
+}
+
+model Reinvestment {
+  id                 String   @id @default(cuid())
+  userId             String
+  sourceBatchId      String
+  targetBatchId      String
+  sourcePayoutId     String
+  targetContributionId String? @unique
+  amount             Decimal  @db.Decimal(15, 2)
+  date               DateTime @default(now())
+  notes              String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sourceBatch        Batch    @relation("ReinvestmentSource", fields: [sourceBatchId], references: [id])
+  targetBatch        Batch    @relation("ReinvestmentTarget", fields: [targetBatchId], references: [id])
+  sourcePayout       Payout   @relation(fields: [sourcePayoutId], references: [id], onDelete: Cascade)
+  targetContribution Contribution? @relation(fields: [targetContributionId], references: [id])
+
+  @@index([userId])
+  @@index([sourceBatchId])
+  @@index([targetBatchId])
+  @@index([sourcePayoutId])
+  @@map("reinvestments")
 }

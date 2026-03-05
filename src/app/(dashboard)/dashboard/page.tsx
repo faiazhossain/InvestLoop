@@ -202,11 +202,18 @@ export default function MemberDashboard() {
                     <TableCell>{c.batch?.name || "-"}</TableCell>
                     <TableCell>{formatCurrency(c.amount)}</TableCell>
                     <TableCell>
-                      <Badge
-                        variant={c.source === "REINVEST" ? "secondary" : "default"}
-                      >
-                        {c.source}
-                      </Badge>
+                      <div className="flex flex-col gap-1">
+                        <Badge
+                          variant={c.source === "REINVEST" ? "secondary" : "default"}
+                        >
+                          {c.source}
+                        </Badge>
+                        {c.reinvestment && (
+                          <span className="text-xs text-muted-foreground">
+                            from {c.reinvestment.sourceBatch?.name || "Previous Batch"}
+                          </span>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>{formatDate(c.date)}</TableCell>
                   </TableRow>
@@ -247,7 +254,20 @@ export default function MemberDashboard() {
                     <TableCell className="text-green-600">
                       {formatCurrency(p.profit)}
                     </TableCell>
-                    <TableCell>{formatCurrency(p.reinvested)}</TableCell>
+                    <TableCell>
+                      <div className="flex flex-col gap-1">
+                        <span>{formatCurrency(p.reinvested)}</span>
+                        {p.reinvestments && p.reinvestments.length > 0 && (
+                          <div className="flex flex-col gap-0.5">
+                            {p.reinvestments.map((r) => (
+                              <span key={r.id} className="text-xs text-muted-foreground">
+                                to {r.targetBatch?.name || "New Batch"}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell className="font-medium">
                       {formatCurrency(p.cashout)}
                     </TableCell>

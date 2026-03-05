@@ -29,6 +29,11 @@ export async function GET(
         contributions: {
           include: {
             user: true,
+            reinvestment: {
+              include: {
+                sourceBatch: true,
+              },
+            },
           },
           orderBy: { date: "desc" },
         },
@@ -36,6 +41,18 @@ export async function GET(
         payouts: {
           include: {
             user: true,
+          },
+        },
+        targetReinvestments: {
+          include: {
+            user: true,
+            sourceBatch: true,
+          },
+        },
+        sourceReinvestments: {
+          include: {
+            user: true,
+            targetBatch: true,
           },
         },
       },

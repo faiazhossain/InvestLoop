@@ -31,6 +31,8 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { Contribution, Batch, User } from "@/types";
 import { Plus, Pencil, Trash2, Search } from "lucide-react";
@@ -58,12 +60,18 @@ export default function ContributionsPage() {
     userId: "",
     batchId: "",
     amount: "",
-    source: "CASH" as "CASH" | "REINVEST",
-    sourceBatchId: "",
     date: new Date().toISOString().split("T")[0],
     notes: "",
   });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [equalAmountForm, setEqualAmountForm] = useState({
+    batchId: "",
+    amount: "",
+    date: new Date().toISOString().split("T")[0],
+    notes: "",
+  });
+  const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
+  const [equalFormErrors, setEqualFormErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     fetchData();
@@ -139,9 +147,6 @@ export default function ContributionsPage() {
     if (!formData.amount || Number(formData.amount) <= 0) {
       errors.amount = "Amount must be greater than 0";
     }
-    if (formData.source === "REINVEST" && !formData.sourceBatchId) {
-      errors.sourceBatchId = "Source batch is required for reinvestment";
-    }
 
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -152,13 +157,19 @@ export default function ContributionsPage() {
       userId: "",
       batchId: "",
       amount: "",
-      source: "CASH",
-      sourceBatchId: "",
       date: new Date().toISOString().split("T")[0],
       notes: "",
     });
     setFormErrors({});
     setSelectedContribution(null);
+    setEqualAmountForm({
+      batchId: "",
+      amount: "",
+      date: new Date().toISOString().split("T")[0],
+      notes: "",
+    });
+    setSelectedMembers([]);
+    setEqualFormErrors({});
   }
 
   function openCreateDialog() {
@@ -172,8 +183,6 @@ export default function ContributionsPage() {
       userId: contribution.userId,
       batchId: contribution.batchId,
       amount: contribution.amount.toString(),
-      source: contribution.source as "CASH" | "REINVEST",
-      sourceBatchId: contribution.sourceBatchId || "",
       date: new Date(contribution.date).toISOString().split("T")[0],
       notes: contribution.notes || "",
     });
@@ -200,16 +209,10 @@ export default function ContributionsPage() {
           : `/api/contributions/${selectedContribution?.id}`;
       const method = formMode === "create" ? "POST" : "PATCH";
 
-      const body = {
-        ...formData,
-        sourceBatchId:
-          formData.source === "REINVEST" ? formData.sourceBatchId : null,
-      };
-
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify(formData),
       });
 
       if (res.ok) {
@@ -252,6 +255,82 @@ export default function ContributionsPage() {
     } catch (error) {
       console.error("Error deleting contribution:", error);
       toast.error("An error occurred");
+    }
+  }
+
+  function validateEqualForm() {
+    const errors: Record<string, string> = {};
+
+    if (!equalAmountForm.batchId) errors.batchId = "Batch is required";
+    if (!equalAmountForm.amount || Number(equalAmountForm.amount) <= 0) {
+      errors.amount = "Amount must be greater than 0";
+    }
+    if (selectedMembers.length === 0) {
+      errors.members = "Select at least one member";
+    }
+
+    setEqualFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  }
+
+  function toggleMember(memberId: string) {
+    setSelectedMembers((prev) =>
+      prev.includes(memberId)
+        ? prev.filter((id) => id !== memberId)
+        : [...prev, memberId]
+    );
+  }
+
+  function toggleAllMembers() {
+    if (selectedMembers.length === members.length) {
+      setSelectedMembers([]);
+    } else {
+      setSelectedMembers(members.map((m) => m.id));
+    }
+  }
+
+  async function handleEqualSubmit(e: React.FormEvent) {
+    e.preventDefault();
+
+    if (!validateEqualForm()) {
+      toast.error("Please fix form errors");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const contributionsData = selectedMembers.map((userId) => ({
+        userId,
+        batchId: equalAmountForm.batchId,
+        amount: equalAmountForm.amount,
+        date: equalAmountForm.date,
+        notes: equalAmountForm.notes,
+      }));
+
+      const res = await fetch("/api/contributions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contributions: contributionsData }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        toast.success(
+          `Added contributions for ${data.count} members (${formatCurrency(Number(data.totalAmount))})`
+        );
+        setIsDialogOpen(false);
+        resetForm();
+        fetchData();
+      } else {
+        const data = await res.json();
+        toast.error(data.error || "Failed to add contributions");
+      }
+    } catch (error) {
+      console.error("Error submitting equal contributions:", error);
+      toast.error("An error occurred");
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -321,163 +400,338 @@ export default function ContributionsPage() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className={formMode === "edit" ? "max-w-md" : "max-w-lg"}>
           <DialogHeader>
             <DialogTitle>
               {formMode === "create" ? "Add Contribution" : "Edit Contribution"}
             </DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit}>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="member">Member *</Label>
-                <Select
-                  value={formData.userId}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, userId: value })
-                  }
-                  disabled={formMode === "edit"}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select member" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {members.map((member) => (
-                      <SelectItem key={member.id} value={member.id}>
-                        {member.name || member.email}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {formErrors.userId && (
-                  <p className="text-sm text-destructive">{formErrors.userId}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="batch">Batch *</Label>
-                <Select
-                  value={formData.batchId}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, batchId: value })
-                  }
-                  disabled={formMode === "edit"}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select batch" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {batches.map((batch) => (
-                      <SelectItem key={batch.id} value={batch.id}>
-                        {batch.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {formErrors.batchId && (
-                  <p className="text-sm text-destructive">{formErrors.batchId}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="amount">Amount *</Label>
-                <Input
-                  id="amount"
-                  type="number"
-                  step="0.01"
-                  value={formData.amount}
-                  onChange={(e) =>
-                    setFormData({ ...formData, amount: e.target.value })
-                  }
-                />
-                {formErrors.amount && (
-                  <p className="text-sm text-destructive">{formErrors.amount}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="source">Source</Label>
-                <Select
-                  value={formData.source}
-                  onValueChange={(value: "CASH" | "REINVEST") =>
-                    setFormData({ ...formData, source: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="CASH">Cash</SelectItem>
-                    <SelectItem value="REINVEST">Reinvest</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              {formData.source === "REINVEST" && (
+          {formMode === "edit" ? (
+            <form onSubmit={handleSubmit}>
+              <div className="space-y-4 py-4">
                 <div className="space-y-2">
-                  <Label htmlFor="sourceBatch">Source Batch *</Label>
+                  <Label htmlFor="member">Member *</Label>
                   <Select
-                    value={formData.sourceBatchId}
+                    value={formData.userId}
                     onValueChange={(value) =>
-                      setFormData({ ...formData, sourceBatchId: value })
+                      setFormData({ ...formData, userId: value })
                     }
+                    disabled={formMode === "edit"}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select source batch" />
+                      <SelectValue placeholder="Select member" />
                     </SelectTrigger>
                     <SelectContent>
-                      {allBatches
-                        .filter((b) => b.status === "CLOSED")
-                        .map((batch) => (
-                          <SelectItem key={batch.id} value={batch.id}>
-                            {batch.name}
-                          </SelectItem>
-                        ))}
+                      {members.map((member) => (
+                        <SelectItem key={member.id} value={member.id}>
+                          {member.name || member.email}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
-                  {formErrors.sourceBatchId && (
-                    <p className="text-sm text-destructive">
-                      {formErrors.sourceBatchId}
-                    </p>
+                  {formErrors.userId && (
+                    <p className="text-sm text-destructive">{formErrors.userId}</p>
                   )}
                 </div>
-              )}
-              <div className="space-y-2">
-                <Label htmlFor="date">Date</Label>
-                <Input
-                  id="date"
-                  type="date"
-                  value={formData.date}
-                  onChange={(e) =>
-                    setFormData({ ...formData, date: e.target.value })
-                  }
-                />
+                <div className="space-y-2">
+                  <Label htmlFor="batch">Batch *</Label>
+                  <Select
+                    value={formData.batchId}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, batchId: value })
+                    }
+                    disabled={formMode === "edit"}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select batch" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {batches.map((batch) => (
+                        <SelectItem key={batch.id} value={batch.id}>
+                          {batch.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {formErrors.batchId && (
+                    <p className="text-sm text-destructive">{formErrors.batchId}</p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="amount">Amount *</Label>
+                  <Input
+                    id="amount"
+                    type="number"
+                    step="0.01"
+                    value={formData.amount}
+                    onChange={(e) =>
+                      setFormData({ ...formData, amount: e.target.value })
+                    }
+                  />
+                  {formErrors.amount && (
+                    <p className="text-sm text-destructive">{formErrors.amount}</p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="date">Date</Label>
+                  <Input
+                    id="date"
+                    type="date"
+                    value={formData.date}
+                    onChange={(e) =>
+                      setFormData({ ...formData, date: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="notes">Notes</Label>
+                  <Input
+                    id="notes"
+                    value={formData.notes}
+                    onChange={(e) =>
+                      setFormData({ ...formData, notes: e.target.value })
+                    }
+                  />
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="notes">Notes</Label>
-                <Input
-                  id="notes"
-                  value={formData.notes}
-                  onChange={(e) =>
-                    setFormData({ ...formData, notes: e.target.value })
-                  }
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsDialogOpen(false)}
-                disabled={isSubmitting}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting
-                  ? "Saving..."
-                  : formMode === "create"
-                  ? "Add"
-                  : "Update"}
-              </Button>
-            </DialogFooter>
-          </form>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsDialogOpen(false)}
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? "Saving..." : "Update"}
+                </Button>
+              </DialogFooter>
+            </form>
+          ) : (
+            <Tabs defaultValue="individual" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="individual">Individual</TabsTrigger>
+                <TabsTrigger value="equal">Equal Amount</TabsTrigger>
+              </TabsList>
+              <TabsContent value="individual">
+                <form onSubmit={handleSubmit}>
+                  <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="member">Member *</Label>
+                      <Select
+                        value={formData.userId}
+                        onValueChange={(value) =>
+                          setFormData({ ...formData, userId: value })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select member" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {members.map((member) => (
+                            <SelectItem key={member.id} value={member.id}>
+                              {member.name || member.email}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {formErrors.userId && (
+                        <p className="text-sm text-destructive">{formErrors.userId}</p>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="batch">Batch *</Label>
+                      <Select
+                        value={formData.batchId}
+                        onValueChange={(value) =>
+                          setFormData({ ...formData, batchId: value })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select batch" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {batches.map((batch) => (
+                            <SelectItem key={batch.id} value={batch.id}>
+                              {batch.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {formErrors.batchId && (
+                        <p className="text-sm text-destructive">{formErrors.batchId}</p>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="amount">Amount *</Label>
+                      <Input
+                        id="amount"
+                        type="number"
+                        step="0.01"
+                        value={formData.amount}
+                        onChange={(e) =>
+                          setFormData({ ...formData, amount: e.target.value })
+                        }
+                      />
+                      {formErrors.amount && (
+                        <p className="text-sm text-destructive">{formErrors.amount}</p>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="date">Date</Label>
+                      <Input
+                        id="date"
+                        type="date"
+                        value={formData.date}
+                        onChange={(e) =>
+                          setFormData({ ...formData, date: e.target.value })
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="notes">Notes</Label>
+                      <Input
+                        id="notes"
+                        value={formData.notes}
+                        onChange={(e) =>
+                          setFormData({ ...formData, notes: e.target.value })
+                        }
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setIsDialogOpen(false)}
+                      disabled={isSubmitting}
+                    >
+                      Cancel
+                    </Button>
+                    <Button type="submit" disabled={isSubmitting}>
+                      {isSubmitting ? "Saving..." : "Add"}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </TabsContent>
+              <TabsContent value="equal">
+                <form onSubmit={handleEqualSubmit}>
+                  <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="batch-equal">Batch *</Label>
+                      <Select
+                        value={equalAmountForm.batchId}
+                        onValueChange={(value) =>
+                          setEqualAmountForm({ ...equalAmountForm, batchId: value })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select batch" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {batches.map((batch) => (
+                            <SelectItem key={batch.id} value={batch.id}>
+                              {batch.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {equalFormErrors.batchId && (
+                        <p className="text-sm text-destructive">{equalFormErrors.batchId}</p>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="amount-equal">Amount per Member *</Label>
+                      <Input
+                        id="amount-equal"
+                        type="number"
+                        step="0.01"
+                        value={equalAmountForm.amount}
+                        onChange={(e) =>
+                          setEqualAmountForm({ ...equalAmountForm, amount: e.target.value })
+                        }
+                      />
+                      {equalFormErrors.amount && (
+                        <p className="text-sm text-destructive">{equalFormErrors.amount}</p>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label>Select Members *</Label>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={toggleAllMembers}
+                        >
+                          {selectedMembers.length === members.length ? "Deselect All" : "Select All"}
+                        </Button>
+                      </div>
+                      <div className="border rounded-md p-3 max-h-48 overflow-y-auto">
+                        {members.map((member) => (
+                          <div key={member.id} className="flex items-center space-x-2 py-1">
+                            <Checkbox
+                              id={`member-${member.id}`}
+                              checked={selectedMembers.includes(member.id)}
+                              onCheckedChange={() => toggleMember(member.id)}
+                            />
+                            <label
+                              htmlFor={`member-${member.id}`}
+                              className="text-sm cursor-pointer"
+                            >
+                              {member.name || member.email}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                      {equalFormErrors.members && (
+                        <p className="text-sm text-destructive">{equalFormErrors.members}</p>
+                      )}
+                      <p className="text-xs text-muted-foreground">
+                        {selectedMembers.length} member(s) selected - Total:{" "}
+                        {formatCurrency(Number(equalAmountForm.amount || 0) * selectedMembers.length)}
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="date-equal">Date</Label>
+                      <Input
+                        id="date-equal"
+                        type="date"
+                        value={equalAmountForm.date}
+                        onChange={(e) =>
+                          setEqualAmountForm({ ...equalAmountForm, date: e.target.value })
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="notes-equal">Notes</Label>
+                      <Input
+                        id="notes-equal"
+                        value={equalAmountForm.notes}
+                        onChange={(e) =>
+                          setEqualAmountForm({ ...equalAmountForm, notes: e.target.value })
+                        }
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setIsDialogOpen(false)}
+                      disabled={isSubmitting}
+                    >
+                      Cancel
+                    </Button>
+                    <Button type="submit" disabled={isSubmitting}>
+                      {isSubmitting ? "Adding..." : `Add for ${selectedMembers.length} Members`}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </TabsContent>
+            </Tabs>
+          )}
         </DialogContent>
       </Dialog>
 

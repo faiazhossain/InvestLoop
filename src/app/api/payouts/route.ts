@@ -40,6 +40,11 @@ export async function GET(request: NextRequest) {
       include: {
         user: true,
         batch: true,
+        reinvestments: {
+          include: {
+            targetBatch: true,
+          },
+        },
       },
       orderBy: { date: "desc" },
     });
