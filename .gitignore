@@ -40,3 +40,4 @@ prisma/*.db-journal
 
 # clerk configuration (can include secrets)
 /.clerk/
+nul
