@@ -284,7 +284,9 @@ export default function MembersPage() {
                     <TableCell>{member.email}</TableCell>
                     <TableCell>
                       <Badge
-                        variant={member.role === "ADMIN" ? "default" : "outline"}
+                        variant={
+                          member.role === "ADMIN" ? "default" : "outline"
+                        }
                       >
                         {member.role === "ADMIN" ? "Admin" : "Member"}
                       </Badge>

@@ -27,10 +27,16 @@ export async function GET() {
       where: { userId: dbUser.id },
     });
 
-    const totalInvested = contributions.reduce(
-      (sum, c) => sum + parseFloat(c.amount.toString()),
-      0
-    );
+    // Only count CASH contributions for totalInvested (actual new money put in)
+    // REINVEST contributions are recycled money from previous batches, not new investment
+    const totalInvested = contributions
+      .filter((c) => c.source === "CASH")
+      .reduce((sum, c) => sum + parseFloat(c.amount.toString()), 0);
+
+    // Active principal = contributions in OPEN batches
+    const activePrincipal = contributions
+      .filter((c) => c.batch.status === "OPEN")
+      .reduce((sum, c) => sum + parseFloat(c.amount.toString()), 0);
 
     const totalProfit = payouts.reduce(
       (sum, p) => sum + parseFloat(p.profit.toString()),
@@ -42,6 +48,12 @@ export async function GET() {
       0
     );
 
+    // Total reinvested from closed batches
+    const totalReinvested = payouts.reduce(
+      (sum, p) => sum + parseFloat(p.reinvested.toString()),
+      0
+    );
+
     const activeInvestments = contributions.filter(
       (c) => c.batch.status === "OPEN"
     ).length;
@@ -49,8 +61,10 @@ export async function GET() {
     return NextResponse.json({
       stats: {
         totalInvested,
+        activePrincipal,
         totalProfit,
         totalCashout,
+        totalReinvested,
         activeInvestments,
         totalBatches: new Set(contributions.map((c) => c.batchId)).size,
       },

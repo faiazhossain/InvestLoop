@@ -32,7 +32,9 @@ export interface Batch {
   name: string;
   description: string | null;
   principal: string;
+  totalShares: string;
   profit: string;
+  profitPerShare: string;
   status: BatchStatus;
   startDate: Date;
   endDate: Date | null;
@@ -54,6 +56,7 @@ export interface Contribution {
   userId: string;
   batchId: string;
   amount: string;
+  shares: string;
   source: ContributionSource;
   date: Date;
   notes: string | null;
@@ -102,8 +105,10 @@ export interface Payout {
   id: string;
   userId: string;
   batchId: string;
+  shares: string;
   principal: string;
   profit: string;
+  profitPerShare: string;
   grossPayout: string;
   reinvested: string;
   cashout: string;
@@ -147,6 +152,19 @@ export const reinvestmentFormSchema = z.object({
 
 export type ReinvestmentFormData = z.infer<typeof reinvestmentFormSchema>;
 
+// System Config
+export interface SystemConfig {
+  id: string;
+  key: string;
+  value: string;
+  description: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Default share price constant
+export const DEFAULT_SHARE_PRICE = 2000;
+
 // API Response types
 export interface ApiResponse<T = unknown> {
   success: boolean;
@@ -157,8 +175,10 @@ export interface ApiResponse<T = unknown> {
 // Dashboard stats
 export interface MemberStats {
   totalInvested: number;
+  activePrincipal: number;
   totalProfit: number;
   totalCashout: number;
+  totalReinvested: number;
   activeInvestments: number;
   totalBatches: number;
 }
@@ -168,7 +188,8 @@ export interface AdminStats {
   activeMembers: number;
   totalBatches: number;
   openBatches: number;
-  totalPrincipal: number;
+  totalInvested: number;
+  activePrincipal: number;
   totalProfit: number;
 }
 

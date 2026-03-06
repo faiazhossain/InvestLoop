@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { currentUser } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import Decimal from "decimal.js";
+import { getSharePrice, calculateShares } from "@/lib/calculations";
 
 export async function GET(request: NextRequest) {
   try {
@@ -113,11 +114,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Calculate shares based on amount
+    const sharePrice = await getSharePrice();
+    const amountDecimal = new Decimal(amount);
+    const shares = calculateShares(amountDecimal, sharePrice);
+
     const contribution = await prisma.contribution.create({
       data: {
         userId,
         batchId,
-        amount: new Decimal(amount),
+        amount: amountDecimal,
+        shares,
         source: source || "CASH",
         date: new Date(date),
         notes,
@@ -128,11 +135,12 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Update batch principal
+    // Update batch principal and totalShares
     await prisma.batch.update({
       where: { id: batchId },
       data: {
         principal: batch.principal.plus(amount),
+        totalShares: batch.totalShares.plus(shares),
       },
     });
 
@@ -207,30 +215,45 @@ async function handleBulkCreate(
     );
   }
 
-  // Calculate total amount
-  const totalAmount = contributions.reduce(
-    (sum, c) => sum.plus(new Decimal(c.amount)),
-    new Decimal(0)
-  );
+  // Get share price for calculations
+  const sharePrice = await getSharePrice();
+
+  // Calculate total amount and shares
+  let totalAmount = new Decimal(0);
+  let totalShares = new Decimal(0);
+  
+  const contributionsWithShares = contributions.map((c) => {
+    const amount = new Decimal(c.amount);
+    const shares = calculateShares(amount, sharePrice);
+    totalAmount = totalAmount.plus(amount);
+    totalShares = totalShares.plus(shares);
+    return {
+      ...c,
+      amount,
+      shares,
+    };
+  });
 
   // Use transaction to create all contributions and update batch principal atomically
   const result = await prisma.$transaction(async (tx) => {
     const createdContributions = await tx.contribution.createMany({
-      data: contributions.map((c) => ({
+      data: contributionsWithShares.map((c) => ({
         userId: c.userId,
         batchId: c.batchId,
-        amount: new Decimal(c.amount),
+        amount: c.amount,
+        shares: c.shares,
         source: (c.source as "CASH" | "REINVEST") || "CASH",
         date: new Date(c.date),
         notes: c.notes,
       })),
     });
 
-    // Update batch principal with total amount
+    // Update batch principal and totalShares
     await tx.batch.update({
       where: { id: batchId },
       data: {
         principal: batch.principal.plus(totalAmount),
+        totalShares: batch.totalShares.plus(totalShares),
       },
     });
 
@@ -241,5 +264,6 @@ async function handleBulkCreate(
     success: true,
     count: result.count,
     totalAmount: totalAmount.toString(),
+    totalShares: totalShares.toString(),
   });
 }

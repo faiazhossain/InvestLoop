@@ -50,22 +50,22 @@ export async function GET() {
           batch.sourceReinvestments?.reduce(
             (sum: number, r: { amount: { toString: () => string } }) =>
               sum + parseFloat(r.amount.toString()),
-            0,
+            0
           ) || 0;
 
         const totalCashout =
           batch.payouts?.reduce(
             (sum: number, p: { cashout: { toString: () => string } }) =>
               sum + parseFloat(p.cashout.toString()),
-            0,
+            0
           ) || 0;
 
         const reinvestmentTargets = [
           ...new Set(
             batch.sourceReinvestments?.map(
               (r: { targetBatch: { name: string } | null }) =>
-                r.targetBatch?.name,
-            ) || [],
+                r.targetBatch?.name
+            ) || []
           ),
         ].filter(Boolean) as string[];
 
@@ -95,7 +95,7 @@ export async function GET() {
     console.error("Error fetching batches:", error);
     return NextResponse.json(
       { error: "Failed to fetch batches" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
     if (!startDate) {
       return NextResponse.json(
         { error: "Start date is required" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -137,7 +137,7 @@ export async function POST(request: NextRequest) {
       if (end <= start) {
         return NextResponse.json(
           { error: "End date must be after start date" },
-          { status: 400 },
+          { status: 400 }
         );
       }
     }
@@ -159,7 +159,7 @@ export async function POST(request: NextRequest) {
     console.error("Error creating batch:", error);
     return NextResponse.json(
       { error: "Failed to create batch" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

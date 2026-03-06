@@ -53,10 +53,10 @@ export default function BatchesPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedBatch, setSelectedBatch] = useState<BatchWithCounts | null>(
-    null,
+    null
   );
   const [batchToDelete, setBatchToDelete] = useState<BatchWithCounts | null>(
-    null,
+    null
   );
   const [formMode, setFormMode] = useState<FormMode>("create");
   const [searchQuery, setSearchQuery] = useState("");
@@ -80,7 +80,7 @@ export default function BatchesPage() {
 
     if (searchQuery) {
       filtered = filtered.filter((batch) =>
-        batch.name.toLowerCase().includes(searchQuery.toLowerCase()),
+        batch.name.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
@@ -174,7 +174,7 @@ export default function BatchesPage() {
         toast.success(
           formMode === "create"
             ? "Batch created successfully"
-            : "Batch updated successfully",
+            : "Batch updated successfully"
         );
         setIsDialogOpen(false);
         resetForm();
@@ -285,46 +285,46 @@ export default function BatchesPage() {
 
   if (isLoading) {
     return (
-      <div className='flex items-center justify-center min-h-[400px]'>
-        <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-primary'></div>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   return (
-    <div className='space-y-6'>
-      <div className='flex items-center justify-between'>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className='text-3xl font-bold'>Batches</h1>
-          <p className='text-muted-foreground'>Manage investment batches</p>
+          <h1 className="text-3xl font-bold">Batches</h1>
+          <p className="text-muted-foreground">Manage investment batches</p>
         </div>
         <Button onClick={openCreateDialog}>
-          <Plus className='h-4 w-4 mr-2' />
+          <Plus className="h-4 w-4 mr-2" />
           Create Batch
         </Button>
       </div>
 
       {/* Filters */}
       <Card>
-        <CardContent className='pt-6'>
-          <div className='flex gap-4'>
-            <div className='flex-1 relative'>
-              <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground' />
+        <CardContent className="pt-6">
+          <div className="flex gap-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder='Search batches...'
+                placeholder="Search batches..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className='pl-10'
+                className="pl-10"
               />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className='w-[180px]'>
-                <SelectValue placeholder='Filter by status' />
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value='ALL'>All Status</SelectItem>
-                <SelectItem value='OPEN'>Open</SelectItem>
-                <SelectItem value='CLOSED'>Closed</SelectItem>
+                <SelectItem value="ALL">All Status</SelectItem>
+                <SelectItem value="OPEN">Open</SelectItem>
+                <SelectItem value="CLOSED">Closed</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -337,7 +337,7 @@ export default function BatchesPage() {
         </CardHeader>
         <CardContent>
           {filteredBatches.length === 0 ? (
-            <p className='text-muted-foreground text-center py-4'>
+            <p className="text-muted-foreground text-center py-4">
               {searchQuery || statusFilter !== "ALL"
                 ? "No batches found"
                 : "No batches yet"}
@@ -354,32 +354,32 @@ export default function BatchesPage() {
                   <TableHead>Status</TableHead>
                   <TableHead>Start Date</TableHead>
                   <TableHead>Contributions</TableHead>
-                  <TableHead className='text-right'>Actions</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredBatches.map((batch) => (
                   <TableRow key={batch.id}>
-                    <TableCell className='font-medium'>{batch.name}</TableCell>
+                    <TableCell className="font-medium">{batch.name}</TableCell>
                     <TableCell>{formatCurrency(batch.principal)}</TableCell>
-                    <TableCell className='text-green-600'>
+                    <TableCell className="text-green-600">
                       {formatCurrency(batch.profit)}
                     </TableCell>
                     <TableCell>
                       {batch.totalReinvested ? (
-                        <div className='flex flex-col'>
+                        <div className="flex flex-col">
                           <span>{formatCurrency(batch.totalReinvested)}</span>
                           {batch.reinvestmentTargets?.map((target, i) => (
                             <span
                               key={i}
-                              className='text-xs text-muted-foreground'
+                              className="text-xs text-muted-foreground"
                             >
                               to {target}
                             </span>
                           ))}
                         </div>
                       ) : (
-                        <span className='text-muted-foreground'>-</span>
+                        <span className="text-muted-foreground">-</span>
                       )}
                     </TableCell>
                     <TableCell>
@@ -399,36 +399,36 @@ export default function BatchesPage() {
                     <TableCell>{formatDate(batch.startDate)}</TableCell>
                     <TableCell>{batch._count?.contributions || 0}</TableCell>
                     <TableCell>
-                      <div className='flex justify-end gap-2'>
+                      <div className="flex justify-end gap-2">
                         <Button
-                          variant='ghost'
-                          size='sm'
+                          variant="ghost"
+                          size="sm"
                           onClick={() => openDetailsDialog(batch)}
                         >
-                          <Eye className='h-4 w-4' />
+                          <Eye className="h-4 w-4" />
                         </Button>
                         <Button
-                          variant='ghost'
-                          size='sm'
+                          variant="ghost"
+                          size="sm"
                           onClick={() => openEditDialog(batch)}
                         >
-                          <Pencil className='h-4 w-4' />
+                          <Pencil className="h-4 w-4" />
                         </Button>
                         <Button
-                          variant='ghost'
-                          size='sm'
+                          variant="ghost"
+                          size="sm"
                           onClick={() => {
                             setBatchToDelete(batch);
                             setIsDeleteDialogOpen(true);
                           }}
-                          className='text-destructive hover:text-destructive'
+                          className="text-destructive hover:text-destructive"
                         >
-                          <Trash2 className='h-4 w-4' />
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                         {batch.status === "OPEN" && (
                           <Button
-                            variant='outline'
-                            size='sm'
+                            variant="outline"
+                            size="sm"
                             onClick={() => closeBatch(batch.id)}
                           >
                             Close
@@ -446,75 +446,75 @@ export default function BatchesPage() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className='max-w-md'>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>
               {formMode === "create" ? "Create New Batch" : "Edit Batch"}
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit}>
-            <div className='space-y-4 py-4'>
-              <div className='space-y-2'>
-                <Label htmlFor='name'>Name *</Label>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Name *</Label>
                 <Input
-                  id='name'
+                  id="name"
                   value={formData.name}
                   onChange={(e) =>
                     setFormData({ ...formData, name: e.target.value })
                   }
-                  placeholder='Q1 2024 Batch'
+                  placeholder="Q1 2024 Batch"
                 />
                 {formErrors.name && (
-                  <p className='text-sm text-destructive'>{formErrors.name}</p>
+                  <p className="text-sm text-destructive">{formErrors.name}</p>
                 )}
               </div>
-              <div className='space-y-2'>
-                <Label htmlFor='description'>Description</Label>
+              <div className="space-y-2">
+                <Label htmlFor="description">Description</Label>
                 <Input
-                  id='description'
+                  id="description"
                   value={formData.description}
                   onChange={(e) =>
                     setFormData({ ...formData, description: e.target.value })
                   }
-                  placeholder='Optional description'
+                  placeholder="Optional description"
                 />
               </div>
-              <div className='grid grid-cols-2 gap-4'>
-                <div className='space-y-2'>
-                  <Label htmlFor='startDate'>Start Date *</Label>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="startDate">Start Date *</Label>
                   <Input
-                    id='startDate'
-                    type='date'
+                    id="startDate"
+                    type="date"
                     value={formData.startDate}
                     onChange={(e) =>
                       setFormData({ ...formData, startDate: e.target.value })
                     }
                   />
                   {formErrors.startDate && (
-                    <p className='text-sm text-destructive'>
+                    <p className="text-sm text-destructive">
                       {formErrors.startDate}
                     </p>
                   )}
                 </div>
-                <div className='space-y-2'>
-                  <Label htmlFor='endDate'>End Date</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="endDate">End Date</Label>
                   <Input
-                    id='endDate'
-                    type='date'
+                    id="endDate"
+                    type="date"
                     value={formData.endDate}
                     onChange={(e) =>
                       setFormData({ ...formData, endDate: e.target.value })
                     }
                   />
                   {formErrors.endDate && (
-                    <p className='text-sm text-destructive'>
+                    <p className="text-sm text-destructive">
                       {formErrors.endDate}
                     </p>
                   )}
                 </div>
               </div>
-              <div className='space-y-2'>
-                <Label htmlFor='status'>Status</Label>
+              <div className="space-y-2">
+                <Label htmlFor="status">Status</Label>
                 <Select
                   value={formData.status}
                   onValueChange={(value: BatchStatus) =>
@@ -525,22 +525,22 @@ export default function BatchesPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value='OPEN'>Open</SelectItem>
-                    <SelectItem value='CLOSED'>Closed</SelectItem>
+                    <SelectItem value="OPEN">Open</SelectItem>
+                    <SelectItem value="CLOSED">Closed</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
             <DialogFooter>
               <Button
-                type='button'
-                variant='outline'
+                type="button"
+                variant="outline"
                 onClick={() => setIsDialogOpen(false)}
                 disabled={isSubmitting}
               >
                 Cancel
               </Button>
-              <Button type='submit' disabled={isSubmitting}>
+              <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting
                   ? "Saving..."
                   : formMode === "create"
@@ -561,7 +561,7 @@ export default function BatchesPage() {
               Are you sure you want to delete{" "}
               <strong>{batchToDelete?.name}</strong>?
               {batchToDelete?._count?.contributions ? (
-                <span className='block mt-2 text-destructive'>
+                <span className="block mt-2 text-destructive">
                   Warning: This batch has {batchToDelete._count.contributions}{" "}
                   contribution(s). Deleting will remove all associated data.
                 </span>
@@ -570,12 +570,12 @@ export default function BatchesPage() {
           </DialogHeader>
           <DialogFooter>
             <Button
-              variant='outline'
+              variant="outline"
               onClick={() => setIsDeleteDialogOpen(false)}
             >
               Cancel
             </Button>
-            <Button variant='destructive' onClick={handleDelete}>
+            <Button variant="destructive" onClick={handleDelete}>
               Delete
             </Button>
           </DialogFooter>
@@ -587,34 +587,34 @@ export default function BatchesPage() {
         open={!!selectedBatch && !isDialogOpen}
         onOpenChange={() => setSelectedBatch(null)}
       >
-        <DialogContent className='max-w-3xl'>
+        <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>{selectedBatch?.name}</DialogTitle>
           </DialogHeader>
           {selectedBatch && (
-            <div className='space-y-6'>
+            <div className="space-y-6">
               <div>
-                <h3 className='text-sm font-medium text-muted-foreground mb-2'>
+                <h3 className="text-sm font-medium text-muted-foreground mb-2">
                   Description
                 </h3>
                 <p>{selectedBatch.description || "No description provided"}</p>
               </div>
 
-              <div className='grid grid-cols-2 md:grid-cols-4 gap-4'>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
-                  <p className='text-sm text-muted-foreground'>Principal</p>
-                  <p className='text-lg font-semibold'>
+                  <p className="text-sm text-muted-foreground">Principal</p>
+                  <p className="text-lg font-semibold">
                     {formatCurrency(selectedBatch.principal)}
                   </p>
                 </div>
                 <div>
-                  <p className='text-sm text-muted-foreground'>Profit</p>
-                  <p className='text-lg font-semibold text-green-600'>
+                  <p className="text-sm text-muted-foreground">Profit</p>
+                  <p className="text-lg font-semibold text-green-600">
                     {formatCurrency(selectedBatch.profit)}
                   </p>
                 </div>
                 <div>
-                  <p className='text-sm text-muted-foreground'>Status</p>
+                  <p className="text-sm text-muted-foreground">Status</p>
                   <Badge
                     variant={
                       selectedBatch.status === "OPEN" ? "default" : "secondary"
@@ -624,24 +624,24 @@ export default function BatchesPage() {
                   </Badge>
                 </div>
                 <div>
-                  <p className='text-sm text-muted-foreground'>Contributions</p>
-                  <p className='text-lg font-semibold'>
+                  <p className="text-sm text-muted-foreground">Contributions</p>
+                  <p className="text-lg font-semibold">
                     {(selectedBatch as BatchWithCounts)._count?.contributions ||
                       0}
                   </p>
                 </div>
               </div>
 
-              <div className='grid grid-cols-2 gap-4'>
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className='text-sm text-muted-foreground'>Start Date</p>
-                  <p className='font-medium'>
+                  <p className="text-sm text-muted-foreground">Start Date</p>
+                  <p className="font-medium">
                     {formatDate(selectedBatch.startDate)}
                   </p>
                 </div>
                 <div>
-                  <p className='text-sm text-muted-foreground'>End Date</p>
-                  <p className='font-medium'>
+                  <p className="text-sm text-muted-foreground">End Date</p>
+                  <p className="font-medium">
                     {selectedBatch.endDate
                       ? formatDate(selectedBatch.endDate)
                       : "Not set"}
@@ -654,10 +654,10 @@ export default function BatchesPage() {
                 Array.isArray(selectedBatch.contributions) &&
                 selectedBatch.contributions.length > 0 && (
                   <div>
-                    <h3 className='text-sm font-medium text-muted-foreground mb-2'>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-2">
                       Recent Contributions
                     </h3>
-                    <div className='border rounded-lg'>
+                    <div className="border rounded-lg">
                       <Table>
                         <TableHeader>
                           <TableRow>
@@ -681,12 +681,14 @@ export default function BatchesPage() {
                                 </TableCell>
                                 <TableCell>
                                   <div className="flex flex-col gap-1">
-                                    <Badge variant='outline'>
+                                    <Badge variant="outline">
                                       {contribution.source}
                                     </Badge>
                                     {contribution.reinvestment && (
                                       <span className="text-xs text-muted-foreground">
-                                        from {contribution.reinvestment.sourceBatch?.name || "Previous Batch"}
+                                        from{" "}
+                                        {contribution.reinvestment.sourceBatch
+                                          ?.name || "Previous Batch"}
                                       </span>
                                     )}
                                   </div>
@@ -707,10 +709,10 @@ export default function BatchesPage() {
                 Array.isArray(selectedBatch.targetReinvestments) &&
                 selectedBatch.targetReinvestments.length > 0 && (
                   <div>
-                    <h3 className='text-sm font-medium text-muted-foreground mb-2'>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-2">
                       Reinvestments Into This Batch
                     </h3>
-                    <div className='border rounded-lg'>
+                    <div className="border rounded-lg">
                       <Table>
                         <TableHeader>
                           <TableRow>
@@ -738,7 +740,7 @@ export default function BatchesPage() {
                                   {formatDate(reinvestment.date)}
                                 </TableCell>
                               </TableRow>
-                            ),
+                            )
                           )}
                         </TableBody>
                       </Table>
@@ -751,10 +753,10 @@ export default function BatchesPage() {
                 Array.isArray(selectedBatch.sourceReinvestments) &&
                 selectedBatch.sourceReinvestments.length > 0 && (
                   <div>
-                    <h3 className='text-sm font-medium text-muted-foreground mb-2'>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-2">
                       Reinvestments From This Batch
                     </h3>
-                    <div className='border rounded-lg'>
+                    <div className="border rounded-lg">
                       <Table>
                         <TableHeader>
                           <TableRow>
@@ -782,7 +784,7 @@ export default function BatchesPage() {
                                   {formatDate(reinvestment.date)}
                                 </TableCell>
                               </TableRow>
-                            ),
+                            )
                           )}
                         </TableBody>
                       </Table>

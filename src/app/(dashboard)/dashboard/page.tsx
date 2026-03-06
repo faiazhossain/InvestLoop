@@ -103,13 +103,18 @@ export default function MemberDashboard() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Invested</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Invested
+            </CardTitle>
             <PiggyBank className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {formatCurrency(stats?.totalInvested || 0)}
             </div>
+            <p className="text-xs text-muted-foreground">
+              Active: {formatCurrency(stats?.activePrincipal || 0)}
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -132,6 +137,9 @@ export default function MemberDashboard() {
             <div className="text-2xl font-bold">
               {formatCurrency(stats?.totalCashout || 0)}
             </div>
+            <p className="text-xs text-muted-foreground">
+              Reinvested: {formatCurrency(stats?.totalReinvested || 0)}
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -204,13 +212,17 @@ export default function MemberDashboard() {
                     <TableCell>
                       <div className="flex flex-col gap-1">
                         <Badge
-                          variant={c.source === "REINVEST" ? "secondary" : "default"}
+                          variant={
+                            c.source === "REINVEST" ? "secondary" : "default"
+                          }
                         >
                           {c.source}
                         </Badge>
                         {c.reinvestment && (
                           <span className="text-xs text-muted-foreground">
-                            from {c.reinvestment.sourceBatch?.name || "Previous Batch"}
+                            from{" "}
+                            {c.reinvestment.sourceBatch?.name ||
+                              "Previous Batch"}
                           </span>
                         )}
                       </div>
@@ -260,7 +272,10 @@ export default function MemberDashboard() {
                         {p.reinvestments && p.reinvestments.length > 0 && (
                           <div className="flex flex-col gap-0.5">
                             {p.reinvestments.map((r) => (
-                              <span key={r.id} className="text-xs text-muted-foreground">
+                              <span
+                                key={r.id}
+                                className="text-xs text-muted-foreground"
+                              >
                                 to {r.targetBatch?.name || "New Batch"}
                               </span>
                             ))}

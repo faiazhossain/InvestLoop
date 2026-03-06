@@ -42,7 +42,9 @@ type FormMode = "create" | "edit";
 
 export default function ContributionsPage() {
   const [contributions, setContributions] = useState<Contribution[]>([]);
-  const [filteredContributions, setFilteredContributions] = useState<Contribution[]>([]);
+  const [filteredContributions, setFilteredContributions] = useState<
+    Contribution[]
+  >([]);
   const [batches, setBatches] = useState<Batch[]>([]);
   const [allBatches, setAllBatches] = useState<Batch[]>([]);
   const [members, setMembers] = useState<User[]>([]);
@@ -50,8 +52,10 @@ export default function ContributionsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [formMode, setFormMode] = useState<FormMode>("create");
-  const [selectedContribution, setSelectedContribution] = useState<Contribution | null>(null);
-  const [contributionToDelete, setContributionToDelete] = useState<Contribution | null>(null);
+  const [selectedContribution, setSelectedContribution] =
+    useState<Contribution | null>(null);
+  const [contributionToDelete, setContributionToDelete] =
+    useState<Contribution | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [memberFilter, setMemberFilter] = useState("ALL");
   const [batchFilter, setBatchFilter] = useState("ALL");
@@ -71,7 +75,9 @@ export default function ContributionsPage() {
     notes: "",
   });
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
-  const [equalFormErrors, setEqualFormErrors] = useState<Record<string, string>>({});
+  const [equalFormErrors, setEqualFormErrors] = useState<
+    Record<string, string>
+  >({});
 
   useEffect(() => {
     fetchData();
@@ -400,7 +406,9 @@ export default function ContributionsPage() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className={formMode === "edit" ? "max-w-md" : "max-w-lg"}>
+        <DialogContent
+          className={formMode === "edit" ? "max-w-md" : "max-w-lg"}
+        >
           <DialogHeader>
             <DialogTitle>
               {formMode === "create" ? "Add Contribution" : "Edit Contribution"}
@@ -430,7 +438,9 @@ export default function ContributionsPage() {
                     </SelectContent>
                   </Select>
                   {formErrors.userId && (
-                    <p className="text-sm text-destructive">{formErrors.userId}</p>
+                    <p className="text-sm text-destructive">
+                      {formErrors.userId}
+                    </p>
                   )}
                 </div>
                 <div className="space-y-2">
@@ -454,7 +464,9 @@ export default function ContributionsPage() {
                     </SelectContent>
                   </Select>
                   {formErrors.batchId && (
-                    <p className="text-sm text-destructive">{formErrors.batchId}</p>
+                    <p className="text-sm text-destructive">
+                      {formErrors.batchId}
+                    </p>
                   )}
                 </div>
                 <div className="space-y-2">
@@ -469,7 +481,9 @@ export default function ContributionsPage() {
                     }
                   />
                   {formErrors.amount && (
-                    <p className="text-sm text-destructive">{formErrors.amount}</p>
+                    <p className="text-sm text-destructive">
+                      {formErrors.amount}
+                    </p>
                   )}
                 </div>
                 <div className="space-y-2">
@@ -537,7 +551,9 @@ export default function ContributionsPage() {
                         </SelectContent>
                       </Select>
                       {formErrors.userId && (
-                        <p className="text-sm text-destructive">{formErrors.userId}</p>
+                        <p className="text-sm text-destructive">
+                          {formErrors.userId}
+                        </p>
                       )}
                     </div>
                     <div className="space-y-2">
@@ -560,7 +576,9 @@ export default function ContributionsPage() {
                         </SelectContent>
                       </Select>
                       {formErrors.batchId && (
-                        <p className="text-sm text-destructive">{formErrors.batchId}</p>
+                        <p className="text-sm text-destructive">
+                          {formErrors.batchId}
+                        </p>
                       )}
                     </div>
                     <div className="space-y-2">
@@ -575,7 +593,9 @@ export default function ContributionsPage() {
                         }
                       />
                       {formErrors.amount && (
-                        <p className="text-sm text-destructive">{formErrors.amount}</p>
+                        <p className="text-sm text-destructive">
+                          {formErrors.amount}
+                        </p>
                       )}
                     </div>
                     <div className="space-y-2">
@@ -623,7 +643,10 @@ export default function ContributionsPage() {
                       <Select
                         value={equalAmountForm.batchId}
                         onValueChange={(value) =>
-                          setEqualAmountForm({ ...equalAmountForm, batchId: value })
+                          setEqualAmountForm({
+                            ...equalAmountForm,
+                            batchId: value,
+                          })
                         }
                       >
                         <SelectTrigger>
@@ -638,7 +661,9 @@ export default function ContributionsPage() {
                         </SelectContent>
                       </Select>
                       {equalFormErrors.batchId && (
-                        <p className="text-sm text-destructive">{equalFormErrors.batchId}</p>
+                        <p className="text-sm text-destructive">
+                          {equalFormErrors.batchId}
+                        </p>
                       )}
                     </div>
                     <div className="space-y-2">
@@ -649,11 +674,16 @@ export default function ContributionsPage() {
                         step="0.01"
                         value={equalAmountForm.amount}
                         onChange={(e) =>
-                          setEqualAmountForm({ ...equalAmountForm, amount: e.target.value })
+                          setEqualAmountForm({
+                            ...equalAmountForm,
+                            amount: e.target.value,
+                          })
                         }
                       />
                       {equalFormErrors.amount && (
-                        <p className="text-sm text-destructive">{equalFormErrors.amount}</p>
+                        <p className="text-sm text-destructive">
+                          {equalFormErrors.amount}
+                        </p>
                       )}
                     </div>
                     <div className="space-y-2">
@@ -665,12 +695,17 @@ export default function ContributionsPage() {
                           size="sm"
                           onClick={toggleAllMembers}
                         >
-                          {selectedMembers.length === members.length ? "Deselect All" : "Select All"}
+                          {selectedMembers.length === members.length
+                            ? "Deselect All"
+                            : "Select All"}
                         </Button>
                       </div>
                       <div className="border rounded-md p-3 max-h-48 overflow-y-auto">
                         {members.map((member) => (
-                          <div key={member.id} className="flex items-center space-x-2 py-1">
+                          <div
+                            key={member.id}
+                            className="flex items-center space-x-2 py-1"
+                          >
                             <Checkbox
                               id={`member-${member.id}`}
                               checked={selectedMembers.includes(member.id)}
@@ -686,11 +721,16 @@ export default function ContributionsPage() {
                         ))}
                       </div>
                       {equalFormErrors.members && (
-                        <p className="text-sm text-destructive">{equalFormErrors.members}</p>
+                        <p className="text-sm text-destructive">
+                          {equalFormErrors.members}
+                        </p>
                       )}
                       <p className="text-xs text-muted-foreground">
                         {selectedMembers.length} member(s) selected - Total:{" "}
-                        {formatCurrency(Number(equalAmountForm.amount || 0) * selectedMembers.length)}
+                        {formatCurrency(
+                          Number(equalAmountForm.amount || 0) *
+                            selectedMembers.length
+                        )}
                       </p>
                     </div>
                     <div className="space-y-2">
@@ -700,7 +740,10 @@ export default function ContributionsPage() {
                         type="date"
                         value={equalAmountForm.date}
                         onChange={(e) =>
-                          setEqualAmountForm({ ...equalAmountForm, date: e.target.value })
+                          setEqualAmountForm({
+                            ...equalAmountForm,
+                            date: e.target.value,
+                          })
                         }
                       />
                     </div>
@@ -710,7 +753,10 @@ export default function ContributionsPage() {
                         id="notes-equal"
                         value={equalAmountForm.notes}
                         onChange={(e) =>
-                          setEqualAmountForm({ ...equalAmountForm, notes: e.target.value })
+                          setEqualAmountForm({
+                            ...equalAmountForm,
+                            notes: e.target.value,
+                          })
                         }
                       />
                     </div>
@@ -725,7 +771,9 @@ export default function ContributionsPage() {
                       Cancel
                     </Button>
                     <Button type="submit" disabled={isSubmitting}>
-                      {isSubmitting ? "Adding..." : `Add for ${selectedMembers.length} Members`}
+                      {isSubmitting
+                        ? "Adding..."
+                        : `Add for ${selectedMembers.length} Members`}
                     </Button>
                   </DialogFooter>
                 </form>
@@ -794,7 +842,9 @@ export default function ContributionsPage() {
                 {filteredContributions.map((contribution) => (
                   <TableRow key={contribution.id}>
                     <TableCell>
-                      {contribution.user?.name || contribution.user?.email || "-"}
+                      {contribution.user?.name ||
+                        contribution.user?.email ||
+                        "-"}
                     </TableCell>
                     <TableCell>{contribution.batch?.name || "-"}</TableCell>
                     <TableCell>{formatCurrency(contribution.amount)}</TableCell>

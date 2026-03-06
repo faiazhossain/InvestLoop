@@ -43,7 +43,9 @@ model Batch {
   name          String
   description   String?
   principal     Decimal       @default(0) @db.Decimal(15, 2)
+  totalShares   Decimal       @default(0) @db.Decimal(15, 4) // Total shares in this batch
   profit        Decimal       @default(0) @db.Decimal(15, 2)
+  profitPerShare Decimal      @default(0) @db.Decimal(15, 4) // Calculated when batch closes
   status        BatchStatus   @default(OPEN)
   startDate     DateTime
   endDate       DateTime?
@@ -63,6 +65,7 @@ model Contribution {
   userId       String
   batchId      String
   amount       Decimal            @db.Decimal(15, 2)
+  shares       Decimal            @default(0) @db.Decimal(15, 4) // Shares (amount / sharePrice), can be fractional
   source       ContributionSource @default(CASH)
   date         DateTime           @default(now())
   notes        String?
@@ -95,8 +98,10 @@ model Payout {
   id              String         @id @default(cuid())
   userId          String
   batchId         String
+  shares          Decimal        @default(0) @db.Decimal(15, 4) // Member's shares in this batch
   principal       Decimal        @db.Decimal(15, 2)
   profit          Decimal        @db.Decimal(15, 2)
+  profitPerShare  Decimal        @default(0) @db.Decimal(15, 4) // Profit per share for reference
   grossPayout     Decimal        @db.Decimal(15, 2)
   reinvested      Decimal        @default(0) @db.Decimal(15, 2)
   cashout         Decimal        @db.Decimal(15, 2)
@@ -127,14 +132,26 @@ model Reinvestment {
   updatedAt          DateTime @updatedAt
 
   user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  sourceBatch        Batch    @relation("ReinvestmentSource", fields: [sourceBatchId], references: [id])
-  targetBatch        Batch    @relation("ReinvestmentTarget", fields: [targetBatchId], references: [id])
+  sourceBatch        Batch    @relation("ReinvestmentSource", fields: [sourceBatchId], references: [id], onDelete: Cascade)
+  targetBatch        Batch    @relation("ReinvestmentTarget", fields: [targetBatchId], references: [id], onDelete: Cascade)
   sourcePayout       Payout   @relation(fields: [sourcePayoutId], references: [id], onDelete: Cascade)
-  targetContribution Contribution? @relation(fields: [targetContributionId], references: [id])
+  targetContribution Contribution? @relation(fields: [targetContributionId], references: [id], onDelete: SetNull)
 
   @@index([userId])
   @@index([sourceBatchId])
   @@index([targetBatchId])
   @@index([sourcePayoutId])
   @@map("reinvestments")
+}
+
+// System configuration for share pricing
+model SystemConfig {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("system_config")
 }

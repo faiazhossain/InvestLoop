@@ -49,11 +49,16 @@ export default function ReturnsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [selectedReturn, setSelectedReturn] = useState<ReturnWithBatch | null>(null);
-  const [returnToDelete, setReturnToDelete] = useState<ReturnWithBatch | null>(null);
+  const [selectedReturn, setSelectedReturn] = useState<ReturnWithBatch | null>(
+    null
+  );
+  const [returnToDelete, setReturnToDelete] = useState<ReturnWithBatch | null>(
+    null
+  );
   const [formMode, setFormMode] = useState<FormMode>("create");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [selectedBatchPrincipal, setSelectedBatchPrincipal] = useState<number>(0);
+  const [selectedBatchPrincipal, setSelectedBatchPrincipal] =
+    useState<number>(0);
   const [formData, setFormData] = useState({
     batchId: "",
     totalReturn: "",
@@ -79,9 +84,7 @@ export default function ReturnsPage() {
           data.returns?.map((r: Return) => r.batchId) || []
         );
         setClosedBatches(
-          data.batches.filter(
-            (b: Batch) => !returnedBatchIds.has(b.id)
-          )
+          data.batches.filter((b: Batch) => !returnedBatchIds.has(b.id))
         );
       }
     } catch (error) {
@@ -98,9 +101,10 @@ export default function ReturnsPage() {
 
   const calculatedProfit = (): number => {
     const totalReturn = parseFloat(formData.totalReturn) || 0;
-    const principal = formMode === "create"
-      ? selectedBatchPrincipal
-      : parseFloat(selectedReturn?.batch?.principal || "0");
+    const principal =
+      formMode === "create"
+        ? selectedBatchPrincipal
+        : parseFloat(selectedReturn?.batch?.principal || "0");
     return totalReturn - principal;
   };
 
@@ -240,7 +244,10 @@ export default function ReturnsPage() {
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={openCreateDialog} disabled={closedBatches.length === 0}>
+            <Button
+              onClick={openCreateDialog}
+              disabled={closedBatches.length === 0}
+            >
               <Plus className="h-4 w-4 mr-2" />
               Record Return
             </Button>
@@ -307,9 +314,7 @@ export default function ReturnsPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="profit">
-                    {isProfit ? "Profit" : "Loss"}
-                  </Label>
+                  <Label htmlFor="profit">{isProfit ? "Profit" : "Loss"}</Label>
                   <div className="flex items-center gap-2">
                     <Input
                       id="profit"
@@ -317,7 +322,9 @@ export default function ReturnsPage() {
                       readOnly
                       className="bg-muted"
                     />
-                    <div className={`flex items-center gap-1 ${isProfit ? "text-green-600" : "text-red-600"}`}>
+                    <div
+                      className={`flex items-center gap-1 ${isProfit ? "text-green-600" : "text-red-600"}`}
+                    >
                       {isProfit ? (
                         <TrendingUp className="h-5 w-5" />
                       ) : (
@@ -328,7 +335,9 @@ export default function ReturnsPage() {
                       </span>
                     </div>
                   </div>
-                  <p className={`text-xs ${isProfit ? "text-green-600" : "text-red-600"}`}>
+                  <p
+                    className={`text-xs ${isProfit ? "text-green-600" : "text-red-600"}`}
+                  >
                     {isProfit
                       ? `Profit = Total Return - Principal = ${formatCurrency(Math.abs(profit))}`
                       : `Loss = Principal - Total Return = ${formatCurrency(Math.abs(profit))}`}
@@ -416,7 +425,11 @@ export default function ReturnsPage() {
                       </TableCell>
                       <TableCell>{formatCurrency(principal)}</TableCell>
                       <TableCell>{formatCurrency(ret.totalReturn)}</TableCell>
-                      <TableCell className={isProfitRow ? "text-green-600" : "text-red-600"}>
+                      <TableCell
+                        className={
+                          isProfitRow ? "text-green-600" : "text-red-600"
+                        }
+                      >
                         <div className="flex items-center gap-1">
                           {isProfitRow ? (
                             <TrendingUp className="h-4 w-4" />
@@ -427,8 +440,11 @@ export default function ReturnsPage() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={isProfitRow ? "default" : "destructive"}>
-                          {isProfitRow ? "+" : "-"}{Math.abs(parseFloat(roi))}%
+                        <Badge
+                          variant={isProfitRow ? "default" : "destructive"}
+                        >
+                          {isProfitRow ? "+" : "-"}
+                          {Math.abs(parseFloat(roi))}%
                         </Badge>
                       </TableCell>
                       <TableCell>{formatDate(ret.date)}</TableCell>

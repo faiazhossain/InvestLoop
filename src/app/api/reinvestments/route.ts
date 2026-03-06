@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { currentUser } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import Decimal from "decimal.js";
-import { calculatePayouts } from "@/lib/calculations";
+import { calculatePayouts, getSharePrice, calculateShares } from "@/lib/calculations";
 
 interface ReinvestmentDecision {
   userId: string;
@@ -125,10 +125,15 @@ export async function POST(request: NextRequest) {
     const validReinvestments: Array<{
       userId: string;
       amount: Decimal;
+      shares: Decimal;
       payoutId: string;
     }> = [];
 
+    // Get share price for calculations
+    const sharePrice = await getSharePrice();
+
     let totalReinvested = new Decimal(0);
+    let totalReinvestedShares = new Decimal(0);
 
     for (const decision of reinvestDecisions) {
       const amount = new Decimal(decision.amount);
@@ -147,13 +152,31 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
+      // VALIDATION: Check if reinvestment amount exceeds gross payout
+      const grossPayout = new Decimal(payout.grossPayout.toString());
+      const alreadyReinvested = new Decimal(payout.reinvested.toString());
+      const availableToReinvest = grossPayout.minus(alreadyReinvested);
+
+      if (amount.greaterThan(availableToReinvest)) {
+        return NextResponse.json(
+          { 
+            error: `Member ${decision.userId} cannot reinvest ${amount.toString()}. Available: ${availableToReinvest.toString()}` 
+          },
+          { status: 400 }
+        );
+      }
+
+      const shares = calculateShares(amount, sharePrice);
+
       validReinvestments.push({
         userId: decision.userId,
         amount,
+        shares,
         payoutId: payout.id,
       });
 
       totalReinvested = totalReinvested.plus(amount);
+      totalReinvestedShares = totalReinvestedShares.plus(shares);
     }
 
     if (validReinvestments.length === 0) {
@@ -168,13 +191,14 @@ export async function POST(request: NextRequest) {
     const reinvestmentIds: string[] = [];
 
     await prisma.$transaction(async (tx) => {
-      // Create all contributions
+      // Create all contributions with shares
       for (const reinvest of validReinvestments) {
         const contribution = await tx.contribution.create({
           data: {
             userId: reinvest.userId,
             batchId: finalTargetBatchId!,
             amount: reinvest.amount,
+            shares: reinvest.shares,
             source: "REINVEST",
             date: new Date(),
             notes: `Reinvestment from ${sourceBatch.name}`,
@@ -205,12 +229,15 @@ export async function POST(request: NextRequest) {
         reinvestmentIds.push(reinvestment.id);
       }
 
-      // Update target batch principal using atomic increment
+      // Update target batch principal and totalShares
       await tx.batch.update({
         where: { id: finalTargetBatchId },
         data: {
           principal: {
             increment: totalReinvested.toNumber(),
+          },
+          totalShares: {
+            increment: totalReinvestedShares.toNumber(),
           },
         },
       });
@@ -235,6 +262,7 @@ export async function POST(request: NextRequest) {
       reinvestments,
       contributions,
       totalReinvested: totalReinvested.toString(),
+      totalReinvestedShares: totalReinvestedShares.toString(),
       targetBatchId: finalTargetBatchId,
     });
   } catch (error) {
