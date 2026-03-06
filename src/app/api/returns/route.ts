@@ -36,6 +36,16 @@ export async function GET() {
               contributions: {
                 where: { userId: dbUser.id },
               },
+              payouts: {
+                where: { userId: dbUser.id },
+                include: {
+                  reinvestments: {
+                    include: {
+                      targetBatch: true,
+                    },
+                  },
+                },
+              },
             },
           },
         },
@@ -44,13 +54,60 @@ export async function GET() {
 
       const returnsWithMemberData = memberReturns
         .filter((ret) => ret.batch.contributions.length > 0)
-        .map((ret) => ({
-          ...ret,
-          memberPrincipal: ret.batch.contributions.reduce(
-            (sum, c) => sum + parseFloat(c.amount.toString()),
-            0
-          ),
-        }));
+        .map((ret) => {
+          const payout = ret.batch.payouts[0] || null;
+          // Separate cash contributions from reinvest contributions
+          const cashContributions = ret.batch.contributions.filter(
+            (c) => c.source === "CASH"
+          );
+          const reinvestContributions = ret.batch.contributions.filter(
+            (c) => c.source === "REINVEST"
+          );
+          return {
+            ...ret,
+            // Total principal in this batch (cash + reinvest)
+            memberPrincipal: ret.batch.contributions.reduce(
+              (sum, c) => sum + parseFloat(c.amount.toString()),
+              0
+            ),
+            // Only cash (new money) - doesn't double count reinvested money
+            memberCashPrincipal: cashContributions.reduce(
+              (sum, c) => sum + parseFloat(c.amount.toString()),
+              0
+            ),
+            // Reinvested into this batch (from previous batches)
+            memberReinvestPrincipal: reinvestContributions.reduce(
+              (sum, c) => sum + parseFloat(c.amount.toString()),
+              0
+            ),
+            memberShares: ret.batch.contributions.reduce(
+              (sum, c) => sum + parseFloat(c.shares?.toString() || "0"),
+              0
+            ),
+            payout: payout
+              ? {
+                  id: payout.id,
+                  principal: payout.principal.toString(),
+                  profit: payout.profit.toString(),
+                  grossPayout: payout.grossPayout.toString(),
+                  reinvested: payout.reinvested.toString(),
+                  cashout: payout.cashout.toString(),
+                  shares: payout.shares.toString(),
+                  date: payout.date,
+                  reinvestments: payout.reinvestments.map((r) => ({
+                    id: r.id,
+                    amount: r.amount.toString(),
+                    targetBatch: r.targetBatch
+                      ? {
+                          id: r.targetBatch.id,
+                          name: r.targetBatch.name,
+                        }
+                      : null,
+                  })),
+                }
+              : null,
+          };
+        });
 
       return NextResponse.json({ returns: returnsWithMemberData });
     }

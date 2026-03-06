@@ -176,21 +176,38 @@ export default function MemberDashboard() {
     ].filter((item) => item.value > 0);
   }, [derivedMetrics]);
 
-  // Batch performance for bar chart
+  // Batch performance for bar chart - now with reinvest/cashout breakdown
   const batchPerformance = useMemo(() => {
-    const byBatch: Record<string, { principal: number; profit: number }> = {};
+    const byBatch: Record<
+      string,
+      {
+        principal: number;
+        profit: number;
+        reinvested: number;
+        cashout: number;
+      }
+    > = {};
     payouts.forEach((p) => {
       const batchName = p.batch?.name || "Unknown";
       if (!byBatch[batchName]) {
-        byBatch[batchName] = { principal: 0, profit: 0 };
+        byBatch[batchName] = {
+          principal: 0,
+          profit: 0,
+          reinvested: 0,
+          cashout: 0,
+        };
       }
       byBatch[batchName].principal += parseFloat(p.principal);
       byBatch[batchName].profit += parseFloat(p.profit);
+      byBatch[batchName].reinvested += parseFloat(p.reinvested || "0");
+      byBatch[batchName].cashout += parseFloat(p.cashout || "0");
     });
     return Object.entries(byBatch).map(([name, data]) => ({
       name,
       principal: data.principal,
       profit: data.profit,
+      reinvested: data.reinvested,
+      cashout: data.cashout,
       roi: data.principal > 0 ? (data.profit / data.principal) * 100 : 0,
     }));
   }, [payouts]);
@@ -584,61 +601,125 @@ export default function MemberDashboard() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Percent className="h-5 w-5 text-primary" />
-                Batch Performance
+                Batch Performance & Money Flow
               </CardTitle>
               <CardDescription>
-                Returns from each completed batch
+                See your returns and how the money was distributed from each
+                batch
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={batchPerformance} layout="vertical">
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      className="stroke-muted"
-                      horizontal={true}
-                      vertical={false}
-                    />
-                    <XAxis
-                      type="number"
-                      tick={{ fontSize: 12 }}
-                      tickFormatter={(value) =>
-                        `৳${(value / 1000).toFixed(0)}k`
-                      }
-                    />
-                    <YAxis
-                      type="category"
-                      dataKey="name"
-                      tick={{ fontSize: 12 }}
-                      width={80}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "hsl(var(--card))",
-                        border: "1px solid hsl(var(--border))",
-                        borderRadius: "8px",
-                      }}
-                      formatter={(value: number, name: string) => [
-                        formatCurrency(value),
-                        name === "principal" ? "Principal" : "Profit",
-                      ]}
-                    />
-                    <Legend />
-                    <Bar
-                      dataKey="principal"
-                      name="Principal"
-                      fill="#3b82f6"
-                      radius={[0, 4, 4, 0]}
-                    />
-                    <Bar
-                      dataKey="profit"
-                      name="Profit"
-                      fill="#22c55e"
-                      radius={[0, 4, 4, 0]}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
+              <div className="space-y-6">
+                {/* Summary Cards */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div className="bg-blue-500/10 rounded-lg p-3 text-center">
+                    <p className="text-xs text-blue-600 mb-1">
+                      Total Principal
+                    </p>
+                    <p className="font-bold text-blue-600">
+                      {formatCurrency(
+                        batchPerformance.reduce(
+                          (sum, b) => sum + b.principal,
+                          0
+                        )
+                      )}
+                    </p>
+                  </div>
+                  <div className="bg-green-500/10 rounded-lg p-3 text-center">
+                    <p className="text-xs text-green-600 mb-1">Total Profit</p>
+                    <p className="font-bold text-green-600">
+                      +
+                      {formatCurrency(
+                        batchPerformance.reduce((sum, b) => sum + b.profit, 0)
+                      )}
+                    </p>
+                  </div>
+                  <div className="bg-purple-500/10 rounded-lg p-3 text-center">
+                    <p className="text-xs text-purple-600 mb-1">
+                      Total Reinvested
+                    </p>
+                    <p className="font-bold text-purple-600">
+                      {formatCurrency(
+                        batchPerformance.reduce(
+                          (sum, b) => sum + b.reinvested,
+                          0
+                        )
+                      )}
+                    </p>
+                  </div>
+                  <div className="bg-emerald-500/10 rounded-lg p-3 text-center">
+                    <p className="text-xs text-emerald-600 mb-1">
+                      Total Cashed Out
+                    </p>
+                    <p className="font-bold text-emerald-600">
+                      {formatCurrency(
+                        batchPerformance.reduce((sum, b) => sum + b.cashout, 0)
+                      )}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Chart */}
+                <div className="h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={batchPerformance} layout="vertical">
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        className="stroke-muted"
+                        horizontal={true}
+                        vertical={false}
+                      />
+                      <XAxis
+                        type="number"
+                        tick={{ fontSize: 12 }}
+                        tickFormatter={(value) =>
+                          `৳${(value / 1000).toFixed(0)}k`
+                        }
+                      />
+                      <YAxis
+                        type="category"
+                        dataKey="name"
+                        tick={{ fontSize: 12 }}
+                        width={80}
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: "hsl(var(--card))",
+                          border: "1px solid hsl(var(--border))",
+                          borderRadius: "8px",
+                        }}
+                        formatter={(value: number, name: string) => {
+                          const labels: Record<string, string> = {
+                            profit: "Profit Earned",
+                            reinvested: "Reinvested",
+                            cashout: "Cashed Out",
+                          };
+                          return [formatCurrency(value), labels[name] || name];
+                        }}
+                      />
+                      <Legend />
+                      <Bar
+                        dataKey="profit"
+                        name="Profit"
+                        fill="#22c55e"
+                        radius={[0, 4, 4, 0]}
+                        stackId="outcome"
+                      />
+                      <Bar
+                        dataKey="reinvested"
+                        name="Reinvested"
+                        fill="#a855f7"
+                        radius={[0, 4, 4, 0]}
+                      />
+                      <Bar
+                        dataKey="cashout"
+                        name="Cashed Out"
+                        fill="#10b981"
+                        radius={[0, 4, 4, 0]}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -772,16 +853,18 @@ export default function MemberDashboard() {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <ArrowDownRight className="h-5 w-5 text-green-500" />
-                My Payouts
+                Batch Outcomes
               </CardTitle>
-              <CardDescription>Returns from completed batches</CardDescription>
+              <CardDescription>
+                See how your money moved from each completed batch
+              </CardDescription>
             </div>
             {payouts.length > 0 && (
               <Badge
                 variant="outline"
                 className="ml-auto bg-green-500/10 text-green-600"
               >
-                {formatCurrency(stats?.totalProfit || 0)} earned
+                {formatCurrency(stats?.totalProfit || 0)} total profit
               </Badge>
             )}
           </CardHeader>
@@ -799,74 +882,213 @@ export default function MemberDashboard() {
                 </p>
               </div>
             ) : (
-              <div className="rounded-lg border overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/50">
-                      <TableHead>Batch</TableHead>
-                      <TableHead className="text-right">Shares</TableHead>
-                      <TableHead className="text-right">Principal</TableHead>
-                      <TableHead className="text-right">Profit</TableHead>
-                      <TableHead className="text-right">Reinvested</TableHead>
-                      <TableHead className="text-right">Cashout</TableHead>
-                      <TableHead>Date</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {payouts.map((p) => (
-                      <TableRow key={p.id} className="hover:bg-muted/30">
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <div className="h-8 w-8 rounded-full bg-green-500/10 flex items-center justify-center text-xs font-semibold text-green-600">
-                              {p.batch?.name?.slice(0, 2) || "?"}
-                            </div>
-                            <span className="font-medium">
-                              {p.batch?.name || "-"}
-                            </span>
+              <div className="space-y-4">
+                {payouts.map((p) => {
+                  const grossPayout = parseFloat(p.grossPayout || "0");
+                  const reinvestedAmount = parseFloat(p.reinvested || "0");
+                  const cashoutAmount = parseFloat(p.cashout || "0");
+                  const principal = parseFloat(p.principal || "0");
+                  const profit = parseFloat(p.profit || "0");
+
+                  const reinvestPercent =
+                    grossPayout > 0
+                      ? (reinvestedAmount / grossPayout) * 100
+                      : 0;
+                  const cashoutPercent =
+                    grossPayout > 0 ? (cashoutAmount / grossPayout) * 100 : 0;
+
+                  const isFullyReinvested = reinvestPercent >= 99.9;
+                  const isFullyCashedOut = cashoutPercent >= 99.9;
+                  const isSplit =
+                    !isFullyReinvested &&
+                    !isFullyCashedOut &&
+                    reinvestedAmount > 0 &&
+                    cashoutAmount > 0;
+
+                  return (
+                    <div
+                      key={p.id}
+                      className={`rounded-lg border p-4 transition-all hover:shadow-md ${
+                        isFullyReinvested
+                          ? "border-purple-500/30 bg-purple-500/5"
+                          : isFullyCashedOut
+                            ? "border-green-500/30 bg-green-500/5"
+                            : "border-border"
+                      }`}
+                    >
+                      {/* Header with batch name and status */}
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`h-10 w-10 rounded-full flex items-center justify-center text-sm font-bold ${
+                              isFullyReinvested
+                                ? "bg-purple-500/20 text-purple-600"
+                                : isFullyCashedOut
+                                  ? "bg-green-500/20 text-green-600"
+                                  : "bg-primary/10 text-primary"
+                            }`}
+                          >
+                            {p.batch?.name?.slice(0, 2) || "?"}
                           </div>
-                        </TableCell>
-                        <TableCell className="text-right text-muted-foreground">
-                          {parseFloat(p.shares || "0").toFixed(2)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {formatCurrency(p.principal)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <span className="text-green-600 font-semibold flex items-center justify-end gap-1">
-                            <TrendingUp className="h-3 w-3" />
-                            {formatCurrency(p.profit)}
+                          <div>
+                            <p className="font-semibold text-lg">
+                              {p.batch?.name || "Unknown Batch"}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Completed {formatDate(p.date)}
+                            </p>
+                          </div>
+                        </div>
+                        <Badge
+                          className={`${
+                            isFullyReinvested
+                              ? "bg-purple-500/10 text-purple-600 border-purple-500/30"
+                              : isFullyCashedOut
+                                ? "bg-green-500/10 text-green-600 border-green-500/30"
+                                : "bg-amber-500/10 text-amber-600 border-amber-500/30"
+                          }`}
+                          variant="outline"
+                        >
+                          {isFullyReinvested && (
+                            <>
+                              <RefreshCw className="h-3 w-3 mr-1" /> Fully
+                              Reinvested
+                            </>
+                          )}
+                          {isFullyCashedOut && (
+                            <>
+                              <Banknote className="h-3 w-3 mr-1" /> Fully Cashed
+                              Out
+                            </>
+                          )}
+                          {isSplit && (
+                            <>
+                              <Activity className="h-3 w-3 mr-1" /> Split Payout
+                            </>
+                          )}
+                          {!isFullyReinvested &&
+                            !isFullyCashedOut &&
+                            !isSplit &&
+                            reinvestedAmount === 0 &&
+                            cashoutAmount === 0 && <>Pending</>}
+                        </Badge>
+                      </div>
+
+                      {/* Financial breakdown */}
+                      <div className="grid grid-cols-3 gap-4 mb-4">
+                        <div className="bg-muted/50 rounded-lg p-3 text-center">
+                          <p className="text-xs text-muted-foreground mb-1">
+                            Principal
+                          </p>
+                          <p className="font-semibold">
+                            {formatCurrency(principal)}
+                          </p>
+                        </div>
+                        <div className="bg-green-500/10 rounded-lg p-3 text-center">
+                          <p className="text-xs text-green-600 mb-1 flex items-center justify-center gap-1">
+                            <TrendingUp className="h-3 w-3" /> Profit
+                          </p>
+                          <p className="font-semibold text-green-600">
+                            +{formatCurrency(profit)}
+                          </p>
+                        </div>
+                        <div className="bg-muted/50 rounded-lg p-3 text-center">
+                          <p className="text-xs text-muted-foreground mb-1">
+                            Gross Payout
+                          </p>
+                          <p className="font-bold">
+                            {formatCurrency(grossPayout)}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Distribution visual bar */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-muted-foreground">
+                            Money Distribution
                           </span>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex flex-col items-end gap-1">
-                            <span className="text-purple-600">
-                              {formatCurrency(p.reinvested)}
-                            </span>
-                            {p.reinvestments && p.reinvestments.length > 0 && (
-                              <div className="flex flex-col items-end gap-0.5">
-                                {p.reinvestments.map((r) => (
-                                  <span
-                                    key={r.id}
-                                    className="text-xs text-muted-foreground flex items-center gap-1"
-                                  >
-                                    <ArrowUpRight className="h-3 w-3" />
-                                    {r.targetBatch?.name || "New Batch"}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
+                          <span className="text-muted-foreground">
+                            {reinvestPercent.toFixed(0)}% reinvested ·{" "}
+                            {cashoutPercent.toFixed(0)}% cashed out
+                          </span>
+                        </div>
+                        <div className="h-3 bg-muted rounded-full overflow-hidden flex">
+                          {reinvestedAmount > 0 && (
+                            <div
+                              className="bg-gradient-to-r from-purple-500 to-purple-400 transition-all duration-500"
+                              style={{ width: `${reinvestPercent}%` }}
+                            />
+                          )}
+                          {cashoutAmount > 0 && (
+                            <div
+                              className="bg-gradient-to-r from-green-500 to-green-400 transition-all duration-500"
+                              style={{ width: `${cashoutPercent}%` }}
+                            />
+                          )}
+                        </div>
+
+                        {/* Legend with amounts */}
+                        <div className="flex items-center justify-between mt-2">
+                          {reinvestedAmount > 0 && (
+                            <div className="flex items-center gap-2">
+                              <div className="h-2 w-2 rounded-full bg-purple-500" />
+                              <span className="text-sm">
+                                <span className="text-purple-600 font-semibold">
+                                  {formatCurrency(reinvestedAmount)}
+                                </span>
+                                <span className="text-muted-foreground">
+                                  {" "}
+                                  reinvested
+                                </span>
+                              </span>
+                            </div>
+                          )}
+                          {cashoutAmount > 0 && (
+                            <div className="flex items-center gap-2">
+                              <div className="h-2 w-2 rounded-full bg-green-500" />
+                              <span className="text-sm">
+                                <span className="text-green-600 font-semibold">
+                                  {formatCurrency(cashoutAmount)}
+                                </span>
+                                <span className="text-muted-foreground">
+                                  {" "}
+                                  withdrawn
+                                </span>
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Reinvestment destination */}
+                      {p.reinvestments && p.reinvestments.length > 0 && (
+                        <div className="mt-4 pt-3 border-t border-dashed">
+                          <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
+                            <RefreshCw className="h-3 w-3" /> Money moved to:
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {p.reinvestments.map((r) => (
+                              <Badge
+                                key={r.id}
+                                variant="outline"
+                                className="bg-purple-500/10 text-purple-600 border-purple-500/30 py-1.5"
+                              >
+                                <ArrowUpRight className="h-3 w-3 mr-1" />
+                                {r.targetBatch?.name || "New Batch"}
+                                <span className="ml-1 text-purple-400">
+                                  (
+                                  {formatCurrency(r.amount || reinvestedAmount)}
+                                  )
+                                </span>
+                              </Badge>
+                            ))}
                           </div>
-                        </TableCell>
-                        <TableCell className="text-right font-bold">
-                          {formatCurrency(p.cashout)}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {formatDate(p.date)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </CardContent>
