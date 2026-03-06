@@ -348,9 +348,7 @@ export default function MemberReturnsPage() {
         >
           <Card className="hover:shadow-md transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Total Value
-              </CardTitle>
+              <CardTitle className="text-sm font-medium">Total Value</CardTitle>
               <div className="h-8 w-8 rounded-full bg-emerald-500/10 flex items-center justify-center">
                 <Wallet className="h-4 w-4 text-emerald-500" />
               </div>
