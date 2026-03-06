@@ -207,7 +207,9 @@ async function handleBulkCreate(
     );
   }
 
-  const missingUserIds = userIds.filter((id) => !members.find((m) => m.id === id));
+  const missingUserIds = userIds.filter(
+    (id) => !members.find((m) => m.id === id)
+  );
   if (missingUserIds.length > 0) {
     return NextResponse.json(
       { error: "Some members not found" },
@@ -221,7 +223,7 @@ async function handleBulkCreate(
   // Calculate total amount and shares
   let totalAmount = new Decimal(0);
   let totalShares = new Decimal(0);
-  
+
   const contributionsWithShares = contributions.map((c) => {
     const amount = new Decimal(c.amount);
     const shares = calculateShares(amount, sharePrice);

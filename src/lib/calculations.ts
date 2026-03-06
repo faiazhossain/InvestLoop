@@ -41,10 +41,10 @@ export async function calculatePayouts(batchId: string) {
   const batchPrincipal = new Decimal(batch.principal.toString());
   const batchProfit = new Decimal(batch.profit.toString());
   const batchTotalShares = new Decimal(batch.totalShares.toString());
-  
+
   // Calculate profit per share for this batch
-  const profitPerShare = batchTotalShares.isZero() 
-    ? new Decimal(0) 
+  const profitPerShare = batchTotalShares.isZero()
+    ? new Decimal(0)
     : batchProfit.dividedBy(batchTotalShares).toDecimalPlaces(4);
 
   // Update batch with profitPerShare
@@ -68,9 +68,15 @@ export async function calculatePayouts(batchId: string) {
   }
 
   // Group contributions by user (both amount and shares)
-  const contributionsByUser = new Map<string, { amount: Decimal; shares: Decimal }>();
+  const contributionsByUser = new Map<
+    string,
+    { amount: Decimal; shares: Decimal }
+  >();
   for (const c of batch.contributions) {
-    const current = contributionsByUser.get(c.userId) || { amount: new Decimal(0), shares: new Decimal(0) };
+    const current = contributionsByUser.get(c.userId) || {
+      amount: new Decimal(0),
+      shares: new Decimal(0),
+    };
     contributionsByUser.set(c.userId, {
       amount: current.amount.plus(c.amount.toString()),
       shares: current.shares.plus(c.shares.toString()),
@@ -79,7 +85,10 @@ export async function calculatePayouts(batchId: string) {
 
   // Calculate payouts for each user
   const payouts = [];
-  for (const [userId, { amount: memberPrincipal, shares: memberShares }] of contributionsByUser) {
+  for (const [
+    userId,
+    { amount: memberPrincipal, shares: memberShares },
+  ] of contributionsByUser) {
     if (memberPrincipal.isZero()) continue;
 
     // Calculate member's profit based on shares
@@ -155,7 +164,9 @@ export async function getBatchStats(batchId: string) {
     uniqueContributors,
     hasReturn: !!batch.return,
     totalPayouts: batch.payouts.length,
-    profitPerShare: batch.profitPerShare ? parseFloat(batch.profitPerShare.toString()) : 0,
+    profitPerShare: batch.profitPerShare
+      ? parseFloat(batch.profitPerShare.toString())
+      : 0,
   };
 }
 
